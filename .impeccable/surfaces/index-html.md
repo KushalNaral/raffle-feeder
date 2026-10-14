@@ -7,7 +7,7 @@ related_targets: []
 
 ## Scope
 
-App shell for Raffle Feeder (index.html + src/). Mode: Operate. Phone-first, works on desktop.
+App shell for Raffle Feeder (index.html + src/). Mode: Operate. Phone-first, works on desktop. Redesign: replaces the "Ticket Wallet" world, which the user rejected as not fun enough.
 
 ## Task
 
@@ -19,14 +19,14 @@ Empty wallet; OCR in progress / low confidence / duplicate number; match / not y
 
 ## Direction contract
 
-THESIS: Your raffle tickets as passes in a wallet. Refuses the category default of a grey list of rows with thumbnails; each ticket is a tactile pass with a perforated stub and a big number, and the draw check is a keypad that lifts the matching pass out of the stack.
+THESIS: Every ticket is an instant scratch card. Refuses grey list rows and the premium-wallet look. A ticket's status is a holographic foil panel that gets scratched off when its number is called, and the check screen is one big scratch card you key a number into.
 
-OWN-WORLD: Night-event ink-navy ground (dark is picked from the scene: an evening hall, tungsten light, phone in one hand). Passes in a curated set of deep jewel tones (indigo, teal, plum, forest, oxblood) with ivory type, perforation notches and a stub. Saffron is the single accent: actions, focus, and Won. Called carries a mint state. Archivo, with its width axis for wide pass numerals and normal width for the UI. Lucide line icons.
+OWN-WORLD: Deep night-violet ground with a faint confetti-dot texture. The cards are punchy printed card stock in hot coral, cobalt, acid lime, tangerine and bubblegum, each with its own ink colour. Holographic silver foil is a real material: a conic pastel sheen with sparkle grain. Bricolage Grotesque: condensed weight 800 for the big numerals and the wordmark, normal width for the UI. Chunky candy keys with depth. Lucide icons.
 
-STORY: Owner sees how many tickets they hold, adds more in seconds, and at the draw types the called number and gets MATCH or Not yours instantly, then marks Called or Won.
+STORY: Owner sees their tickets as a colourful deck, adds more in seconds, and at the draw keys in the number. The foil scratches itself off to reveal IT'S YOURS (with confetti) or NOT THIS TIME, and one tap marks it Called or Won.
 
-FIRST VIEWPORT: Top bar with the app name and the add action. Wallet: a stacked pass list with large wide numerals and photo strips. A filter segmented control (All / Called / Won). Bottom tab bar on phone (Wallet, Check) with a saffron Add button. On desktop the Check keypad is docked in a right column.
+FIRST VIEWPORT: Wordmark top-left and settings top-right. Filter chips (All / Called / Won). A two-column grid of scratch cards: big number, photo inset, and a foil status strip. Bottom tab bar on phone (Tickets, Check) with a raised coral Add button. On desktop the Check card and keypad are docked on the right and fit the viewport.
 
-FORM: Ticket Wallet (third card of the safer hand, after the user steered toward premium). seed: none (unavailable)
+FORM: Scratch Card (the user's pick from a grounded re-roll; the bolder register was unavailable because the roll ran degraded). seed: none (unavailable)
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
