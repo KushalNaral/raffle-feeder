@@ -189,9 +189,12 @@ export default function App() {
     <div className={`app${wide ? ' is-wide' : ''}`}>
       <header className="topbar">
         <div className="brand">
-          <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden className="brand-mark">
-            <rect x="5" y="9" width="24" height="15" rx="3.5" fill="var(--tone-indigo)" transform="rotate(-8 16 16)" />
-            <rect x="3" y="7" width="24" height="15" rx="3.5" fill="var(--saffron)" transform="rotate(-8 16 16)" />
+          <svg viewBox="0 0 36 36" width="38" height="38" aria-hidden className="brand-mark">
+            <g transform="rotate(-10 18 18)">
+              <rect x="4" y="7" width="28" height="22" rx="5" fill="var(--coral)" />
+              <rect x="8" y="19" width="20" height="6" rx="2" fill="var(--foil-flat)" />
+              <path d="M9 13h9" stroke="var(--card-ink)" strokeWidth="3" strokeLinecap="round" />
+            </g>
           </svg>
           <div>
             <h1>Raffle Feeder</h1>
@@ -244,7 +247,7 @@ export default function App() {
         <nav className="tabbar" aria-label="Sections">
           <button type="button" className={tab === 'wallet' ? 'is-on' : ''} aria-current={tab === 'wallet' ? 'page' : undefined} onClick={() => setTab('wallet')}>
             <Ticket size={24} aria-hidden />
-            <span>Wallet</span>
+            <span>Tickets</span>
           </button>
           <button type="button" className="tab-add" onClick={() => setSheet({ type: 'add' })} aria-label="Add tickets">
             <Plus size={30} strokeWidth={2.6} aria-hidden />

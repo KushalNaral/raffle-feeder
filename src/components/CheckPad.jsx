@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Delete, Check, Trophy, Undo2 } from 'lucide-react';
-import Pass from './Pass.jsx';
-import { normalize, readLocal, writeLocal } from '../util.js';
+import { Delete, Check, Trophy, Undo2, PartyPopper } from 'lucide-react';
+import ScratchFoil from './ScratchFoil.jsx';
+import { FoilStrip } from './TicketCard.jsx';
+import { burst } from '../confetti.js';
+import { normalize, readLocal, toneFor, writeLocal } from '../util.js';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
 const MAX = 6;
@@ -12,6 +14,7 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
   const [prize, setPrize] = useState('');
   const [log, setLog] = useState(() => readLocal('rf:checks', []));
   const loggedRef = useRef('');
+  const cardRef = useRef(null);
 
   const index = useMemo(() => {
     const m = new Map();
@@ -29,6 +32,8 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
     () => (key && !matches.length ? [...index.keys()].filter((k) => k.startsWith(key)).length : 0),
     [index, key, matches.length],
   );
+  const state = !key ? 'idle' : matches.length ? 'match' : prefix ? 'partial' : 'miss';
+  const revealed = state === 'match' || state === 'miss';
 
   const press = (k) => {
     setPrizeFor(null);
@@ -36,6 +41,17 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
     if (k === 'back') return setEntry((e) => e.slice(0, -1));
     setEntry((e) => (e.length >= MAX ? e : e + k));
   };
+
+  // Celebrate each new match once.
+  const celebrated = useRef('');
+  useEffect(() => {
+    if (state === 'match' && celebrated.current !== key) {
+      celebrated.current = key;
+      const id = setTimeout(() => burst(cardRef.current), 380);
+      return () => clearTimeout(id);
+    }
+    if (state !== 'match') celebrated.current = '';
+  }, [state, key]);
 
   // Log a check once the entry has settled for a moment.
   useEffect(() => {
@@ -77,33 +93,51 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
     setPrize('');
   };
 
-  const state = !key ? 'idle' : matches.length ? 'match' : 'miss';
+  const foilLabel = state === 'partial' ? 'Keep typing…' : 'Key in a number';
+  const tone = state === 'match' ? toneFor(key) : 'ink';
 
   return (
     <section className={`check state-${state}`} aria-label="Check a called number">
-      <div className="check-display">
-        <h2 className="check-title">Check a called number</h2>
-        <output className="check-entry" aria-live="off" data-empty={!entry}>
-          {entry || '–––'}
+      <div className={`check-card tone-${tone}`} ref={cardRef}>
+        <h2 className="check-title">Called number</h2>
+        <output className="check-entry" data-empty={!entry}>
+          {entry || '000'}
         </output>
-        <p className="check-verdict" role="status" aria-live="polite">
-          {state === 'idle' && 'Key in the number as it’s announced.'}
-          {state === 'match' && (
-            <>
-              <strong>It’s yours!</strong>
-              {matches.length > 1 ? ` You hold ${matches.length} of these.` : ''}
-            </>
-          )}
-          {state === 'miss' &&
-            (prefix ? `Keep going… ${prefix} of your tickets start with ${key}.` : `Not yours. ${key} isn’t in your wallet.`)}
-        </p>
+        <div className="reveal">
+          <p className="reveal-text" role="status" aria-live="polite">
+            {state === 'match' && (
+              <>
+                <PartyPopper size={26} strokeWidth={2.4} aria-hidden />
+                <span>
+                  It’s yours!
+                  {matches.length > 1 ? <small> You hold {matches.length} of these.</small> : null}
+                </span>
+              </>
+            )}
+            {state === 'miss' && <span className="miss">Not this time</span>}
+            {state === 'partial' && (
+              <span className="sr-only">
+                {prefix} of your tickets start with {key}
+              </span>
+            )}
+          </p>
+          <ScratchFoil revealed={revealed} label={foilLabel} />
+        </div>
+        {state === 'partial' ? (
+          <p className="check-hint">
+            {prefix} of your tickets start with {key}
+          </p>
+        ) : null}
       </div>
 
       <div className="check-result">
         {state === 'match' &&
           matches.map((t) => (
             <div key={t.id} className="match">
-              <Pass ticket={t} thumbUrl={thumbs[t.id]} onOpen={() => onOpen(t.id)} lifted />
+              <button type="button" className="match-ticket" onClick={() => onOpen(t.id)} aria-label={`Open ticket ${t.number}`}>
+                <span className="match-photo">{thumbs[t.id] ? <img src={thumbs[t.id]} alt="" /> : null}</span>
+                <FoilStrip ticket={t} />
+              </button>
               {prizeFor === t.id ? (
                 <form
                   className="prize-form"
@@ -122,7 +156,7 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
                       placeholder="e.g. Rice cooker"
                       maxLength={60}
                     />
-                    <button className="btn btn-primary" type="submit">
+                    <button className="btn btn-win" type="submit">
                       Save
                     </button>
                   </div>
@@ -131,22 +165,22 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
                 <div className="match-actions">
                   {t.called ? (
                     <button type="button" className="btn btn-quiet" onClick={() => undoCalled(t)}>
-                      <Undo2 size={18} aria-hidden /> Undo called
+                      <Undo2 size={18} aria-hidden /> Undo
                     </button>
                   ) : (
                     <button type="button" className="btn btn-mint" onClick={() => markCalled(t)}>
-                      <Check size={18} strokeWidth={2.6} aria-hidden /> Mark called
+                      <Check size={18} strokeWidth={3} aria-hidden /> Mark called
                     </button>
                   )}
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-win"
                     onClick={() => {
                       setPrizeFor(t.id);
                       setPrize(t.prize || '');
                     }}
                   >
-                    <Trophy size={18} aria-hidden /> {t.prize ? 'Edit prize' : 'I won a prize'}
+                    <Trophy size={18} aria-hidden /> {t.prize ? 'Edit prize' : 'I won!'}
                   </button>
                 </div>
               )}
