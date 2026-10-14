@@ -1,12 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
-export default function Sheet({ title, onClose, children, footer, wide = false, label }) {
-  const ref = useRef(null);
+interface SheetProps {
+  title: string;
+  onClose: () => void;
+  children?: ReactNode;
+  footer?: ReactNode;
+  wide?: boolean;
+  label?: string;
+}
+
+export default function Sheet({ title, onClose, children, footer, wide = false, label }: SheetProps) {
+  const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    const prev = document.activeElement;
+    const prev = document.activeElement as HTMLElement | null;
     ref.current?.focus();
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);

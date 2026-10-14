@@ -1,10 +1,19 @@
 import { useRef, useState } from 'react';
 import { Download, Upload, Trash2, ShieldCheck } from 'lucide-react';
-import Sheet from './Sheet.jsx';
+import Sheet from './Sheet';
 
-export default function SettingsSheet({ count, onClose, onExport, onImport, onClearAll, onClearChecks }) {
+interface SettingsSheetProps {
+  count: number;
+  onClose: () => void;
+  onExport: () => void;
+  onImport: (file: File) => void;
+  onClearAll: () => void;
+  onClearChecks: () => void;
+}
+
+export default function SettingsSheet({ count, onClose, onExport, onImport, onClearAll, onClearChecks }: SettingsSheetProps) {
   const [confirm, setConfirm] = useState(false);
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <Sheet title="Settings" onClose={onClose}>
       <div className="settings">

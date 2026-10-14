@@ -18,9 +18,13 @@ Raffle Feeder keeps your paper raffle tickets in a phone wallet. Photograph your
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/
-npm run build
+npm run dev        # http://localhost:5173/
+npm run typecheck  # strict TypeScript
+npm test           # Vitest + Testing Library
+npm run build      # typechecks, then builds
 ```
+
+The app is strict TypeScript (`tsconfig.json`). Tests sit next to the code they cover (`*.test.ts(x)`) and run in jsdom with an in-memory IndexedDB. CI runs typecheck, tests and build on every pull request, and the deploy workflow won't publish if any of them fail.
 
 ## Deploy
 

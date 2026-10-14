@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Trash2, Maximize2, X } from 'lucide-react';
-import Sheet from './Sheet.jsx';
-import { FoilStrip } from './TicketCard.jsx';
-import { fmtDate, fmtTime, normalize, toneFor } from '../util.js';
+import Sheet from './Sheet';
+import { FoilStrip } from './TicketCard';
+import { fmtDate, fmtTime, normalize, toneFor } from '../util';
+import type { Ticket, TicketPatch } from '../types';
 
-export default function TicketSheet({ ticket, onClose, onUpdate, onDelete }) {
-  const [url, setUrl] = useState(null);
+interface TicketSheetProps {
+  ticket: Ticket;
+  onClose: () => void;
+  onUpdate: (id: string, patch: TicketPatch) => void;
+  onDelete: (id: string) => void;
+}
+
+export default function TicketSheet({ ticket, onClose, onUpdate, onDelete }: TicketSheetProps) {
+  const [url, setUrl] = useState<string | null>(null);
   const [number, setNumber] = useState(ticket.number);
   const [prize, setPrize] = useState(ticket.prize || '');
   const [confirmDelete, setConfirmDelete] = useState(false);

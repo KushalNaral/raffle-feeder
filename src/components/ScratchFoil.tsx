@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type PointerEvent } from 'react';
 
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-function paintFoil(ctx, w, h, label) {
+function paintFoil(ctx: CanvasRenderingContext2D, w: number, h: number, label: string | undefined) {
   ctx.globalCompositeOperation = 'source-over';
   ctx.clearRect(0, 0, w, h);
   const base = ctx.createLinearGradient(0, 0, w, h);
@@ -43,26 +43,34 @@ function paintFoil(ctx, w, h, label) {
 }
 
 /** A canvas foil layer. Set `revealed` to scratch it off; `rub` lets fingers scratch it too. */
-export default function ScratchFoil({ revealed, label, rub = true }) {
-  const ref = useRef(null);
+interface ScratchFoilProps {
+  revealed: boolean;
+  label?: string;
+  rub?: boolean;
+}
+
+export default function ScratchFoil({ revealed, label, rub = true }: ScratchFoilProps) {
+  const ref = useRef<HTMLCanvasElement>(null);
   const size = useRef({ w: 0, h: 0 });
   const anim = useRef(0);
   const labelRef = useRef(label);
   labelRef.current = label;
 
-  const ctx = () => ref.current?.getContext('2d');
+  const ctx = () => ref.current?.getContext('2d') ?? null;
 
   const repaint = () => {
     const c = ref.current;
     if (!c) return;
     const { w, h } = size.current;
     const g = ctx();
+    if (!g) return;
     g.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
     paintFoil(g, w, h, labelRef.current);
   };
 
   useEffect(() => {
     const c = ref.current;
+    if (!c) return;
     const ro = new ResizeObserver(() => {
       const r = c.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -78,6 +86,7 @@ export default function ScratchFoil({ revealed, label, rub = true }) {
 
   useEffect(() => {
     const c = ref.current;
+    if (!c) return;
     cancelAnimationFrame(anim.current);
     if (!revealed) {
       c.classList.remove('is-gone');
@@ -91,22 +100,24 @@ export default function ScratchFoil({ revealed, label, rub = true }) {
     // Auto-scratch: a zig-zag stroke sweeping left to right.
     const { w, h } = size.current;
     const g = ctx();
+    if (!g) return;
     g.globalCompositeOperation = 'destination-out';
     g.lineCap = 'round';
     g.lineJoin = 'round';
     g.lineWidth = Math.max(28, h * 0.42);
-    const pts = [];
+    const pts: [number, number][] = [];
     const steps = Math.max(6, Math.round(w / 34));
     for (let i = 0; i <= steps; i++) pts.push([(w * i) / steps, i % 2 ? h * 0.82 : h * 0.18]);
     const start = performance.now();
     const dur = 360;
     let drawn = 0;
-    const tick = (t) => {
+    const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
       const upto = Math.floor(p * (pts.length - 1));
       g.beginPath();
-      g.moveTo(...pts[Math.max(0, drawn)]);
-      for (let i = drawn + 1; i <= upto; i++) g.lineTo(...pts[i]);
+      const [mx, my] = pts[drawn] ?? [0, 0];
+      g.moveTo(mx, my);
+      for (const [x, y] of pts.slice(drawn + 1, upto + 1)) g.lineTo(x, y);
       g.stroke();
       drawn = upto;
       if (p < 1) anim.current = requestAnimationFrame(tick);
@@ -123,9 +134,11 @@ export default function ScratchFoil({ revealed, label, rub = true }) {
   }, [label]);
 
   const scratching = useRef(false);
-  const scratchAt = (e) => {
-    const r = ref.current.getBoundingClientRect();
+  const scratchAt = (e: PointerEvent<HTMLCanvasElement>) => {
+    const c = ref.current;
     const g = ctx();
+    if (!c || !g) return;
+    const r = c.getBoundingClientRect();
     g.globalCompositeOperation = 'destination-out';
     g.beginPath();
     g.arc(e.clientX - r.left, e.clientY - r.top, 18, 0, Math.PI * 2);

@@ -4,21 +4,44 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 const PAD = 8;
 const GAP = 14;
 
-const findTarget = (step) => {
-  for (const sel of [].concat(step.target)) {
-    const el = document.querySelector(sel);
+export interface TourStep {
+  /** One selector, or several tried in order; the first visible match wins. */
+  target: string | string[];
+  round?: boolean;
+  title: string;
+  body: string;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  r: number;
+}
+
+interface Placement {
+  top: number;
+  left: number;
+  below: boolean;
+  arrow: number;
+}
+
+const findTarget = (step: TourStep): HTMLElement | null => {
+  for (const sel of ([] as string[]).concat(step.target)) {
+    const el = document.querySelector<HTMLElement>(sel);
     if (el && el.getClientRects().length) return el;
   }
   return null;
 };
 
 /** Coach-mark tour: spotlights one element at a time with an annotated note. */
-export default function Tour({ steps, onClose }) {
+export default function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const live = steps.filter((s) => findTarget(s));
   const [i, setI] = useState(0);
-  const [rect, setRect] = useState(null);
-  const [place, setPlace] = useState(null);
-  const noteRef = useRef(null);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const [place, setPlace] = useState<Placement | null>(null);
+  const noteRef = useRef<HTMLDivElement>(null);
   const step = live[i];
 
   const measure = useCallback(() => {
@@ -64,7 +87,7 @@ export default function Tour({ steps, onClose }) {
   const back = useCallback(() => setI((v) => Math.max(0, v - 1)), []);
 
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
       else if (e.key === 'ArrowRight') next();
       else if (e.key === 'ArrowLeft') back();
