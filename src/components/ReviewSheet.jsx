@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RotateCw, Trash2, ScanLine, LoaderCircle, TriangleAlert, Crosshair } from 'lucide-react';
+import { RotateCw, Trash2, ScanLine, LoaderCircle, TriangleAlert, Crosshair, Pointer } from 'lucide-react';
 import Sheet from './Sheet.jsx';
 import { loadImage, renderRotated, canvasToBlob } from '../image.js';
 import { readBox, guessWhole } from '../ocr.js';
@@ -9,7 +9,7 @@ const TAP_W = 0.3;
 const TAP_H = 0.12;
 
 /** Drag (or tap) a box over the number on the photo. */
-function SpotPicker({ src, box, onBox, label }) {
+function SpotPicker({ src, box, onBox, label, hint }) {
   const ref = useRef(null);
   const [draft, setDraft] = useState(null);
   const start = useRef(null);
@@ -68,6 +68,14 @@ function SpotPicker({ src, box, onBox, label }) {
       aria-label={label}
     >
       {src ? <img src={src} alt="" draggable={false} /> : <div className="spot-loading" />}
+      {hint && src && !shown ? (
+        <div className="spot-hint" aria-hidden>
+          <span className="spot-hint-box">
+            <Pointer size={22} strokeWidth={2.4} className="spot-hint-hand" />
+          </span>
+          <span className="spot-hint-note">Drag a box over the ticket number</span>
+        </div>
+      ) : null}
       {shown ? (
         <div
           className="spot-box"
@@ -99,6 +107,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   );
   const [spot, setSpot] = useState(() => readLocal('rf:spot', null));
   const [saving, setSaving] = useState(false);
+  const [hinted, setHinted] = useState(() => readLocal('rf:hint-spot', false));
   const media = useRef(new Map()); // id -> { img, canvas }
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -181,6 +190,10 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   );
 
   const onBox = async (id, box) => {
+    if (!hinted) {
+      setHinted(true);
+      writeLocal('rf:hint-spot', true);
+    }
     const it = itemsRef.current.find((x) => x.id === id);
     const next = { rotation: it.rotation, box };
     setSpot(next);
@@ -301,12 +314,13 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
                   box={it.box}
                   onBox={(b) => onBox(it.id, b)}
                   label={`Photo ${i + 1}. Drag over the ticket number to read it.`}
+                  hint={!hinted && !spot && i === 0}
                 />
                 <div className="review-photo-tools">
-                  <button type="button" className="icon-btn on-photo" onClick={() => rotate(it.id)} aria-label="Rotate photo">
+                  <button type="button" className="icon-btn on-photo" onClick={() => rotate(it.id)} aria-label="Rotate photo" data-tip="Rotate">
                     <RotateCw size={20} />
                   </button>
-                  <button type="button" className="icon-btn on-photo" onClick={() => remove(it.id)} aria-label="Remove photo">
+                  <button type="button" className="icon-btn on-photo" onClick={() => remove(it.id)} aria-label="Remove photo" data-tip="Remove">
                     <Trash2 size={20} />
                   </button>
                 </div>
