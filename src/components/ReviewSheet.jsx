@@ -266,6 +266,16 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
 
   const missing = usable.filter((it) => !normalize(it.number)).length;
 
+  // Enter moves to the next ticket still missing a number, or adds the batch when none are left.
+  const onEnter = (id) => {
+    const list = itemsRef.current.filter((it) => it.status !== 'error');
+    const from = list.findIndex((it) => it.id === id);
+    const order = [...list.slice(from + 1), ...list.slice(0, from)];
+    const next = order.find((it) => !normalize(it.number));
+    if (next) document.getElementById(`n-${next.id}`)?.focus();
+    else if (ready && !saving) save();
+  };
+
   return (
     <Sheet
       title={items.length === 1 ? 'Confirm your ticket' : `Confirm ${items.length} tickets`}
@@ -337,9 +347,15 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
                     value={it.number}
                     placeholder="—"
                     disabled={it.status === 'error'}
+                    enterKeyHint={missing > (normalize(it.number) ? 0 : 1) ? 'next' : 'done'}
                     onChange={(e) =>
                       patch(it.id, { number: e.target.value.replace(/\D/g, ''), status: 'manual' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      onEnter(it.id);
+                    }}
                   />
                   {it.status === 'reading' || it.status === 'loading' ? (
                     <LoaderCircle size={22} className="spin field-icon" aria-hidden />

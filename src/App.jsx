@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Images, Plus, Settings, Ticket, Hash, CircleHelp } from 'lucide-react';
+import { Images, Plus, Settings, Ticket, Hash, CircleHelp } from 'lucide-react';
 import Wallet from './components/Wallet.jsx';
 import CheckPad from './components/CheckPad.jsx';
 import ReviewSheet from './components/ReviewSheet.jsx';
 import TicketSheet from './components/TicketSheet.jsx';
 import SettingsSheet from './components/SettingsSheet.jsx';
-import Sheet from './components/Sheet.jsx';
 import Tour from './components/Tour.jsx';
 import {
   clearTickets,
@@ -89,7 +88,11 @@ export default function App() {
 
   useEffect(() => {
     loadTickets()
-      .then((t) => setTickets(t))
+      .then((t) => {
+        setTickets(t);
+        // Coming back with tickets saved usually means the draw is on: open straight to Check.
+        if (t.length) setTab('check');
+      })
       .catch(() => say('Couldn’t open saved tickets. Private browsing may block storage.'))
       .finally(() => setLoaded(true));
   }, [say]);
@@ -279,7 +282,7 @@ export default function App() {
             <Settings size={22} />
           </button>
           {wide ? (
-            <button type="button" className="btn btn-primary" onClick={() => setSheet({ type: 'add' })} data-tour="add">
+            <button type="button" className="btn btn-primary" onClick={() => galleryRef.current?.click()} data-tour="add">
               <Plus size={20} strokeWidth={2.6} aria-hidden /> Add tickets
             </button>
           ) : null}
@@ -316,7 +319,7 @@ export default function App() {
             <Ticket size={24} aria-hidden />
             <span>Tickets</span>
           </button>
-          <button type="button" className="tab-add" onClick={() => setSheet({ type: 'add' })} aria-label="Add tickets">
+          <button type="button" className="tab-add" onClick={() => galleryRef.current?.click()} aria-label="Add tickets">
             <Plus size={30} strokeWidth={2.6} aria-hidden />
           </button>
           <button
@@ -355,27 +358,6 @@ export default function App() {
         }}
       />
 
-      {sheet?.type === 'add' ? (
-        <Sheet title="Add tickets" onClose={() => setSheet(null)}>
-          <div className="add-options">
-            <button type="button" className="add-option" onClick={() => cameraRef.current?.click()}>
-              <Camera size={28} aria-hidden />
-              <span>
-                <strong>Take a photo</strong>
-                <small>One ticket at a time with your camera.</small>
-              </span>
-            </button>
-            <button type="button" className="add-option" onClick={() => galleryRef.current?.click()}>
-              <Images size={28} aria-hidden />
-              <span>
-                <strong>Choose from gallery</strong>
-                <small>Select as many photos as you like. Great for a whole booklet.</small>
-              </span>
-            </button>
-          </div>
-          {wide ? <p className="fineprint center">Or drop photos anywhere on this page.</p> : null}
-        </Sheet>
-      ) : null}
       {sheet?.type === 'review' ? (
         <ReviewSheet
           files={sheet.files}

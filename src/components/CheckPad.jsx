@@ -13,6 +13,9 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
   const [prizeFor, setPrizeFor] = useState(null);
   const [prize, setPrize] = useState('');
   const [log, setLog] = useState(() => readLocal('rf:checks', []));
+  const [settled, setSettled] = useState('');
+  const settledRef = useRef('');
+  settledRef.current = settled;
   const loggedRef = useRef('');
   const cardRef = useRef(null);
 
@@ -37,9 +40,13 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
 
   const press = (k) => {
     setPrizeFor(null);
+    const fresh = !!settledRef.current;
+    settledRef.current = '';
+    setSettled('');
     if (k === 'clear') return setEntry('');
     if (k === 'back') return setEntry((e) => e.slice(0, -1));
-    setEntry((e) => (e.length >= MAX ? e : e + k));
+    // Once a result has settled, the next digit starts the next called number.
+    setEntry((e) => (fresh ? k : e.length >= MAX ? e : e + k));
   };
 
   // Celebrate each new match once.
@@ -47,26 +54,30 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
   useEffect(() => {
     if (state === 'match' && celebrated.current !== key) {
       celebrated.current = key;
-      const id = setTimeout(() => burst(cardRef.current), 380);
+      const id = setTimeout(() => burst(cardRef.current), 240);
       return () => clearTimeout(id);
     }
     if (state !== 'match') celebrated.current = '';
   }, [state, key]);
 
-  // Log a check once the entry has settled for a moment.
+  // Once the entry has settled for a moment: log it, and mark matching tickets as called.
   useEffect(() => {
     if (!key) return;
     const id = setTimeout(() => {
+      const hits = index.get(key) || [];
+      if (!hits.length && [...index.keys()].some((k) => k.startsWith(key))) return; // still mid-number
+      setSettled(key);
       if (loggedRef.current === key) return;
       loggedRef.current = key;
+      for (const t of hits) if (!t.called) onUpdate(t.id, { called: true, calledAt: Date.now() });
       setLog((l) => {
-        const next = [{ n: key, hit: (index.get(key) || []).length > 0 }, ...l.filter((x) => x.n !== key)].slice(0, 12);
+        const next = [{ n: key, hit: hits.length > 0 }, ...l.filter((x) => x.n !== key)].slice(0, 12);
         writeLocal('rf:checks', next);
         return next;
       });
-    }, 1400);
+    }, 1200);
     return () => clearTimeout(id);
-  }, [key, index]);
+  }, [key, index, onUpdate]);
 
   // Physical keyboard support when the pad is on screen.
   useEffect(() => {
@@ -127,6 +138,8 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
           <p className="check-hint">
             {prefix} of your tickets start with {key}
           </p>
+        ) : settled && settled === key ? (
+          <p className="check-hint">{state === 'match' ? 'Marked as called. ' : ''}Type the next number</p>
         ) : null}
       </div>
 
@@ -195,7 +208,10 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
                   <button
                     type="button"
                     className={`log-chip${c.hit ? ' is-hit' : ''}`}
-                    onClick={() => setEntry(c.n)}
+                    onClick={() => {
+                      setSettled('');
+                      setEntry(c.n);
+                    }}
                     aria-label={`${c.n}, ${c.hit ? 'yours' : 'not yours'}`}
                   >
                     {c.n}

@@ -99,7 +99,7 @@ export default function ScratchFoil({ revealed, label, rub = true }) {
     const steps = Math.max(6, Math.round(w / 34));
     for (let i = 0; i <= steps; i++) pts.push([(w * i) / steps, i % 2 ? h * 0.82 : h * 0.18]);
     const start = performance.now();
-    const dur = 620;
+    const dur = 360;
     let drawn = 0;
     const tick = (t) => {
       const p = Math.min(1, (t - start) / dur);
