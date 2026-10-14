@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Images, Plus, Settings, Ticket, Hash } from 'lucide-react';
+import { Camera, Images, Plus, Settings, Ticket, Hash, CircleHelp } from 'lucide-react';
 import Wallet from './components/Wallet.jsx';
 import CheckPad from './components/CheckPad.jsx';
 import ReviewSheet from './components/ReviewSheet.jsx';
 import TicketSheet from './components/TicketSheet.jsx';
 import SettingsSheet from './components/SettingsSheet.jsx';
 import Sheet from './components/Sheet.jsx';
+import Tour from './components/Tour.jsx';
 import {
   clearTickets,
   exportBackup,
@@ -16,7 +17,41 @@ import {
   saveTicket,
 } from './db.js';
 import { warmUp } from './ocr.js';
-import { writeLocal } from './util.js';
+import { readLocal, writeLocal } from './util.js';
+
+const TOUR_STEPS = [
+  {
+    target: ['.tab-add', '[data-tour=add]'],
+    round: false,
+    title: 'Add your tickets',
+    body: 'Snap one with the camera, or pick a whole booklet of photos from your gallery at once.',
+  },
+  {
+    target: ['.deck > li:first-child .tcard', '.empty-card'],
+    title: 'Every ticket is a scratch card',
+    body: 'The shiny foil means it’s still waiting for the draw. Tap a card to see its photo, fix the number or delete it.',
+  },
+  {
+    target: '.chips',
+    title: 'Called and won at a glance',
+    body: 'Filter your deck to the tickets that were called, or the ones that won you something.',
+  },
+  {
+    target: ['[data-tour=check-tab]', '.check-card'],
+    title: 'At the draw, check here',
+    body: 'Key in each number as it’s announced. The foil scratches itself off to show IT’S YOURS, or not this time.',
+  },
+  {
+    target: '[data-tour=settings]',
+    title: 'Keep a backup',
+    body: 'Tickets and photos live only on this device. Export a backup file before you switch phones.',
+  },
+  {
+    target: '[data-tour=help]',
+    title: 'Need a refresher?',
+    body: 'Tap here any time to replay this tour.',
+  },
+];
 
 const useWide = () => {
   const q = '(min-width: 960px)';
@@ -38,6 +73,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [checksKey, setChecksKey] = useState(0);
+  const [touring, setTouring] = useState(false);
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
   const wide = useWide();
@@ -57,6 +93,17 @@ export default function App() {
       .catch(() => say('Couldn’t open saved tickets. Private browsing may block storage.'))
       .finally(() => setLoaded(true));
   }, [say]);
+
+  useEffect(() => {
+    if (!loaded || readLocal('rf:toured', false)) return;
+    const id = setTimeout(() => setTouring(true), 700);
+    return () => clearTimeout(id);
+  }, [loaded]);
+
+  const endTour = useCallback(() => {
+    setTouring(false);
+    writeLocal('rf:toured', true);
+  }, []);
 
   // One object URL per thumbnail, revoked when the ticket goes away.
   const thumbCache = useRef(new Map());
@@ -208,11 +255,31 @@ export default function App() {
           </div>
         </div>
         <div className="topbar-actions">
-          <button type="button" className="icon-btn" onClick={() => setSheet({ type: 'settings' })} aria-label="Settings">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => {
+              setTab('wallet');
+              setTouring(true);
+            }}
+            aria-label="Show me around"
+            data-tip="Show me around"
+            data-tour="help"
+          >
+            <CircleHelp size={22} />
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setSheet({ type: 'settings' })}
+            aria-label="Settings"
+            data-tip="Backup & settings"
+            data-tour="settings"
+          >
             <Settings size={22} />
           </button>
           {wide ? (
-            <button type="button" className="btn btn-primary" onClick={() => setSheet({ type: 'add' })}>
+            <button type="button" className="btn btn-primary" onClick={() => setSheet({ type: 'add' })} data-tour="add">
               <Plus size={20} strokeWidth={2.6} aria-hidden /> Add tickets
             </button>
           ) : null}
@@ -252,7 +319,13 @@ export default function App() {
           <button type="button" className="tab-add" onClick={() => setSheet({ type: 'add' })} aria-label="Add tickets">
             <Plus size={30} strokeWidth={2.6} aria-hidden />
           </button>
-          <button type="button" className={tab === 'check' ? 'is-on' : ''} aria-current={tab === 'check' ? 'page' : undefined} onClick={() => setTab('check')}>
+          <button
+            type="button"
+            className={tab === 'check' ? 'is-on' : ''}
+            aria-current={tab === 'check' ? 'page' : undefined}
+            onClick={() => setTab('check')}
+            data-tour="check-tab"
+          >
             <Hash size={24} aria-hidden />
             <span>Check</span>
           </button>
@@ -340,6 +413,8 @@ export default function App() {
           <p>Drop ticket photos to add them</p>
         </div>
       ) : null}
+
+      {touring && !sheet ? <Tour steps={TOUR_STEPS} onClose={endTour} /> : null}
 
       <div className="toast-region" role="status" aria-live="polite">
         {toast ? (
