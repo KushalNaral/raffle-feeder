@@ -1399,3 +1399,237 @@ button.tcard:active {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Guide: tooltips, tour, hints ---------- */
+
+[data-tip] {
+  position: relative;
+}
+@media (hover: hover) {
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    z-index: 60;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--card-ink);
+    font-size: 13px;
+    font-weight: 700;
+    font-stretch: 100%;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    transition:
+      opacity 0.15s ease,
+      transform 0.2s var(--ease-out);
+  }
+  [data-tip]:hover::after,
+  [data-tip]:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: 0.25s;
+  }
+  .review-photo-tools [data-tip]::after {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+}
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+}
+.tour-catch {
+  position: absolute;
+  inset: 0;
+}
+.tour-spot {
+  position: fixed;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 3px var(--lime),
+    0 0 0 9999px oklch(0.1 0.06 295 / 0.74);
+  transition:
+    left 0.45s var(--ease-out),
+    top 0.45s var(--ease-out),
+    width 0.45s var(--ease-out),
+    height 0.45s var(--ease-out),
+    border-radius 0.45s var(--ease-out);
+}
+.tour-spot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 3px solid var(--lime);
+  animation: halo 1.6s ease-out infinite;
+}
+@keyframes halo {
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+.tour-note {
+  position: fixed;
+  width: min(340px, calc(100vw - 24px));
+  padding: 16px 18px 14px;
+  border-radius: 22px;
+  background-color: var(--lime);
+  background-image: var(--grain);
+  background-size: 120px;
+  background-blend-mode: soft-light;
+  color: var(--card-ink);
+  box-shadow:
+    inset 0 -4px 0 oklch(0 0 0 / 0.14),
+    0 18px 40px oklch(0.06 0.05 295 / 0.6);
+  outline: none;
+  animation: note-in 0.4s var(--ease-out) both;
+}
+.tour-note::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: calc(var(--arrow, 50%) - 10px);
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--lime);
+  transform: rotate(45deg);
+}
+.tour-note.is-above::before {
+  top: auto;
+  bottom: -9px;
+}
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+.tour-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.tour-count {
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.7;
+}
+.tour-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 8px;
+  margin-right: -8px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.tour-skip:hover {
+  background: oklch(0.2 0.07 295 / 0.1);
+}
+.tour-note h2 {
+  font-size: 26px;
+  font-weight: 800;
+  font-stretch: 78%;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.tour-note p {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+.tour-note .btn-win {
+  background: var(--card-ink);
+  color: var(--lime);
+  min-height: 46px;
+}
+.tour-note .tour-back {
+  background: oklch(0.2 0.07 295 / 0.12);
+  color: var(--card-ink);
+  min-height: 46px;
+  padding: 0 14px;
+  box-shadow: none;
+}
+.tour-dots {
+  position: absolute;
+  left: 18px;
+  bottom: 30px;
+  display: flex;
+  gap: 5px;
+}
+.tour-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: oklch(0.2 0.07 295 / 0.25);
+  transition: width 0.3s var(--ease-out);
+}
+.tour-dots span.is-on {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--card-ink);
+}
+
+.spot-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  pointer-events: none;
+  background: oklch(0.12 0.05 295 / 0.35);
+  line-height: 1.2;
+}
+.spot-hint-box {
+  position: relative;
+  width: 132px;
+  height: 52px;
+  border: 3px dashed var(--lime);
+  border-radius: 10px;
+  animation: hint-draw 2.2s var(--ease-out) infinite;
+}
+.spot-hint-hand {
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  color: var(--ink);
+  filter: drop-shadow(0 2px 4px oklch(0.1 0.05 295 / 0.6));
+}
+@keyframes hint-draw {
+  0% {
+    clip-path: inset(0 100% 100% 0 round 10px);
+  }
+  55%,
+  100% {
+    clip-path: inset(-20px -20px -24px -20px round 10px);
+  }
+}
+.spot-hint-note {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--card-ink);
+  font-size: 15px;
+  font-weight: 800;
+}

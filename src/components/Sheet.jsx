@@ -29,7 +29,7 @@ export default function Sheet({ title, onClose, children, footer, wide = false, 
       >
         <header className="sheet-head">
           <h2>{title}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close" data-tip="Close">
             <X size={22} />
           </button>
         </header>

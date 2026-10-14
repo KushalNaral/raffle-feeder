@@ -79,7 +79,7 @@ export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery })
           className="icon-btn"
           onClick={() => setSort((s) => (s === 'number' ? 'recent' : 'number'))}
           aria-label={sort === 'number' ? 'Sorted by number. Sort by most recent' : 'Sorted by most recent. Sort by number'}
-          title={sort === 'number' ? 'Sorted by number' : 'Sorted by most recent'}
+          data-tip={sort === 'number' ? 'Sorted by number' : 'Newest first'}
         >
           <ArrowDownUp size={20} />
           <span className="sort-label">{sort === 'number' ? '1–9' : 'New'}</span>
