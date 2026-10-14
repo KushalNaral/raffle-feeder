@@ -339,7 +339,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
                 {dupe ? (
                   <p className="review-warn">
                     <TriangleAlert size={16} aria-hidden />
-                    {existingSet.has(k) ? `${k} is already in your wallet.` : `${k} appears twice in this batch.`}
+                    {existingSet.has(k) ? `${k} is already in your tickets.` : `${k} appears twice in this batch.`}
                   </p>
                 ) : null}
               </div>

@@ -203,12 +203,12 @@ export default function App() {
                 ? tickets.length
                   ? `${tickets.length} ticket${tickets.length === 1 ? '' : 's'} · ${calledCount} called`
                   : 'No tickets yet'
-                : 'Opening wallet…'}
+                : 'Loading tickets…'}
             </p>
           </div>
         </div>
         <div className="topbar-actions">
-          <button type="button" className="icon-btn" onClick={() => setSheet({ type: 'settings' })} aria-label="Wallet settings">
+          <button type="button" className="icon-btn" onClick={() => setSheet({ type: 'settings' })} aria-label="Settings">
             <Settings size={22} />
           </button>
           {wide ? (

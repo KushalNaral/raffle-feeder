@@ -6,7 +6,7 @@ export default function SettingsSheet({ count, onClose, onExport, onImport, onCl
   const [confirm, setConfirm] = useState(false);
   const fileRef = useRef(null);
   return (
-    <Sheet title="Wallet settings" onClose={onClose}>
+    <Sheet title="Settings" onClose={onClose}>
       <div className="settings">
         <p className="privacy">
           <ShieldCheck size={20} aria-hidden />
