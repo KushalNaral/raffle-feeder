@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trash2, Maximize2, X } from 'lucide-react';
 import Sheet from './Sheet.jsx';
-import { StateChip } from './Pass.jsx';
+import { FoilStrip } from './TicketCard.jsx';
 import { fmtDate, fmtTime, normalize, toneFor } from '../util.js';
 
 export default function TicketSheet({ ticket, onClose, onUpdate, onDelete }) {
@@ -31,17 +31,16 @@ export default function TicketSheet({ ticket, onClose, onUpdate, onDelete }) {
 
   return (
     <Sheet title={`Ticket ${ticket.number}`} onClose={onClose}>
-      <div className={`ticket-hero tone-${toneFor(ticket.number)}`}>
-        <span className="pass-no">{ticket.number}</span>
-        <StateChip ticket={ticket} />
+      <div className={`tcard tcard-hero tone-${toneFor(ticket.number)}`}>
+        <span className="tcard-no">{ticket.number}</span>
+        <button type="button" className="tcard-photo ticket-photo" onClick={() => setZoom(true)} aria-label="View photo full screen">
+          {url ? <img src={url} alt={`Photo of ticket ${ticket.number}`} /> : null}
+          <span className="zoom-hint">
+            <Maximize2 size={16} aria-hidden /> Full screen
+          </span>
+        </button>
+        <FoilStrip ticket={ticket} />
       </div>
-
-      <button type="button" className="ticket-photo" onClick={() => setZoom(true)} aria-label="View photo full screen">
-        {url ? <img src={url} alt={`Photo of ticket ${ticket.number}`} /> : null}
-        <span className="zoom-hint">
-          <Maximize2 size={16} aria-hidden /> Full screen
-        </span>
-      </button>
 
       <div className="form-grid">
         <div className="field">

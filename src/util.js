@@ -3,7 +3,7 @@ export const normalize = (n) => String(n ?? '').replace(/\D/g, '').replace(/^0+(
 export const uid = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-const TONES = ['indigo', 'teal', 'plum', 'forest', 'oxblood'];
+const TONES = ['coral', 'cobalt', 'lime', 'tangerine', 'bubblegum'];
 export const toneFor = (number) => {
   const n = parseInt(normalize(number) || '0', 10);
   return TONES[n % TONES.length];

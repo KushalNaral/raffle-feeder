@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Camera, Images, ArrowDownUp } from 'lucide-react';
-import Pass from './Pass.jsx';
+import TicketCard from './TicketCard.jsx';
 import { byNumber } from '../util.js';
 
 const FILTERS = [
@@ -32,13 +32,17 @@ export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery })
   if (!tickets.length) {
     return (
       <section className="wallet wallet-empty" aria-labelledby="empty-title">
-        <div className="ghost-pass" aria-hidden>
-          <span />
+        <div className="tcard tcard-grid tone-ghost empty-card" aria-hidden>
+          <span className="tcard-no">???</span>
+          <span className="tcard-photo" />
+          <span className="strip strip-foil">
+            <span>Your first ticket</span>
+          </span>
         </div>
-        <h2 id="empty-title">Your wallet is empty</h2>
+        <h2 id="empty-title">No tickets yet</h2>
         <p>
-          Photograph your raffle tickets. You confirm each number once, then checking a called number takes a
-          single tap.
+          Snap your raffle tickets. Confirm each number once, and at the draw you’ll know in one tap if it’s
+          yours.
         </p>
         <div className="empty-actions">
           <button type="button" className="btn btn-primary" onClick={onCamera}>
@@ -56,7 +60,7 @@ export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery })
   return (
     <section className="wallet" aria-label="Your tickets">
       <div className="wallet-tools">
-        <div className="segmented" role="tablist" aria-label="Filter tickets">
+        <div className="chips" role="tablist" aria-label="Filter tickets">
           {FILTERS.map(([id, label]) => (
             <button
               key={id}
@@ -83,10 +87,10 @@ export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery })
       </div>
 
       {list.length ? (
-        <ol className="stack">
-          {list.map((t) => (
-            <li key={t.id}>
-              <Pass ticket={t} thumbUrl={thumbs[t.id]} onOpen={() => onOpen(t.id)} />
+        <ol className="deck">
+          {list.map((t, i) => (
+            <li key={t.id} style={{ '--i': i }}>
+              <TicketCard ticket={t} thumbUrl={thumbs[t.id]} onOpen={() => onOpen(t.id)} />
             </li>
           ))}
         </ol>
