@@ -1,9 +1,9 @@
 const COLORS = ['#ff6b57', '#3d5bff', '#c8f44a', '#ffb347', '#ff8fc8', '#ffffff'];
 
 /** A short confetti burst from an element. */
-export function burst(fromEl) {
+export function burst(fromEl: Element | null | undefined): void {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  const r = fromEl?.getBoundingClientRect?.() || { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+  const r = fromEl?.getBoundingClientRect() ?? { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
   const c = document.createElement('canvas');
   c.className = 'confetti';
   const dpr = window.devicePixelRatio || 1;
@@ -11,6 +11,7 @@ export function burst(fromEl) {
   c.height = innerHeight * dpr;
   document.body.appendChild(c);
   const g = c.getContext('2d');
+  if (!g) return c.remove();
   g.scale(dpr, dpr);
   const ox = r.left + r.width / 2;
   const oy = r.top + r.height / 2;
@@ -25,12 +26,12 @@ export function burst(fromEl) {
       s: 5 + Math.random() * 7,
       r: Math.random() * 6,
       vr: (Math.random() - 0.5) * 0.4,
-      c: COLORS[(Math.random() * COLORS.length) | 0],
+      c: COLORS[(Math.random() * COLORS.length) | 0] ?? '#ffffff',
       round: Math.random() > 0.6,
     };
   });
   const start = performance.now();
-  const frame = (t) => {
+  const frame = (t: number) => {
     const age = t - start;
     g.clearRect(0, 0, innerWidth, innerHeight);
     g.globalAlpha = Math.max(0, 1 - age / 1600);

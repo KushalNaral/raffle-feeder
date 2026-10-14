@@ -1,19 +1,30 @@
 import { useMemo, useState } from 'react';
 import { Camera, Images, ArrowDownUp } from 'lucide-react';
-import TicketCard from './TicketCard.jsx';
-import { byNumber } from '../util.js';
+import TicketCard from './TicketCard';
+import { byNumber } from '../util';
+import type { Ticket } from '../types';
 
-const FILTERS = [
+type Filter = 'all' | 'called' | 'won';
+
+const FILTERS: [Filter, string][] = [
   ['all', 'All'],
   ['called', 'Called'],
   ['won', 'Won'],
 ];
 
-export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery }) {
-  const [filter, setFilter] = useState('all');
-  const [sort, setSort] = useState('number');
+interface WalletProps {
+  tickets: Ticket[];
+  thumbs: Record<string, string | null>;
+  onOpen: (id: string) => void;
+  onCamera: () => void;
+  onGallery: () => void;
+}
 
-  const counts = useMemo(
+export default function Wallet({ tickets, thumbs, onOpen, onCamera, onGallery }: WalletProps) {
+  const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<'number' | 'recent'>('number');
+
+  const counts = useMemo<Record<Filter, number>>(
     () => ({
       all: tickets.length,
       called: tickets.filter((t) => t.called && !t.prize).length,

@@ -1,7 +1,8 @@
 import { Check, Trophy } from 'lucide-react';
-import { fmtTime, toneFor } from '../util.js';
+import { fmtTime, toneFor } from '../util';
+import type { Ticket } from '../types';
 
-export function FoilStrip({ ticket }) {
+export function FoilStrip({ ticket }: { ticket: Ticket }) {
   if (ticket.prize)
     return (
       <span className="strip strip-won">
@@ -23,18 +24,24 @@ export function FoilStrip({ ticket }) {
   );
 }
 
-export default function TicketCard({ ticket, thumbUrl, onOpen, size = 'grid', as = 'button' }) {
-  const Tag = as;
+interface TicketCardProps {
+  ticket: Ticket;
+  thumbUrl: string | null | undefined;
+  onOpen: () => void;
+}
+
+export default function TicketCard({ ticket, thumbUrl, onOpen }: TicketCardProps) {
   const status = ticket.prize ? `won ${ticket.prize}` : ticket.called ? 'called' : 'waiting for the draw';
   return (
-    <Tag
-      className={`tcard tcard-${size} tone-${toneFor(ticket.number)}`}
+    <button
+      type="button"
+      className={`tcard tcard-grid tone-${toneFor(ticket.number)}`}
       onClick={onOpen}
-      {...(Tag === 'button' ? { type: 'button', 'aria-label': `Ticket ${ticket.number}, ${status}` } : {})}
+      aria-label={`Ticket ${ticket.number}, ${status}`}
     >
       <span className="tcard-no">{ticket.number}</span>
       <span className="tcard-photo">{thumbUrl ? <img src={thumbUrl} alt="" loading="lazy" /> : null}</span>
       <FoilStrip ticket={ticket} />
-    </Tag>
+    </button>
   );
 }

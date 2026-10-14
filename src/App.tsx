@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Images, Plus, Settings, Ticket, Hash, CircleHelp } from 'lucide-react';
-import Wallet from './components/Wallet.jsx';
-import CheckPad from './components/CheckPad.jsx';
-import ReviewSheet from './components/ReviewSheet.jsx';
-import TicketSheet from './components/TicketSheet.jsx';
-import SettingsSheet from './components/SettingsSheet.jsx';
-import Sheet from './components/Sheet.jsx';
-import Tour from './components/Tour.jsx';
+import { Images, Plus, Settings, Ticket as TicketIcon, Hash, CircleHelp } from 'lucide-react';
+import Wallet from './components/Wallet';
+import CheckPad from './components/CheckPad';
+import ReviewSheet from './components/ReviewSheet';
+import TicketSheet from './components/TicketSheet';
+import SettingsSheet from './components/SettingsSheet';
+import Tour, { type TourStep } from './components/Tour';
 import {
   clearTickets,
   exportBackup,
@@ -15,11 +14,14 @@ import {
   removeTicket,
   requestPersistence,
   saveTicket,
-} from './db.js';
-import { warmUp } from './ocr.js';
-import { readLocal, writeLocal } from './util.js';
+} from './db';
+import { warmUp } from './ocr';
+import { readLocal, writeLocal } from './util';
+import type { Ticket, TicketPatch } from './types';
 
-const TOUR_STEPS = [
+type SheetState = { type: 'review'; files: File[] } | { type: 'ticket'; id: string } | { type: 'settings' };
+
+const TOUR_STEPS: TourStep[] = [
   {
     target: ['.tab-add', '[data-tour=add]'],
     round: false,
@@ -66,19 +68,19 @@ const useWide = () => {
 };
 
 export default function App() {
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState('wallet');
-  const [sheet, setSheet] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [tab, setTab] = useState<'wallet' | 'check'>('wallet');
+  const [sheet, setSheet] = useState<SheetState | null>(null);
+  const [toast, setToast] = useState<{ msg: string; id: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [checksKey, setChecksKey] = useState(0);
   const [touring, setTouring] = useState(false);
-  const cameraRef = useRef(null);
-  const galleryRef = useRef(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const wide = useWide();
 
-  const say = useCallback((msg) => {
+  const say = useCallback((msg: string) => {
     setToast({ msg, id: Date.now() });
   }, []);
   useEffect(() => {
@@ -89,7 +91,11 @@ export default function App() {
 
   useEffect(() => {
     loadTickets()
-      .then((t) => setTickets(t))
+      .then((t) => {
+        setTickets(t);
+        // Coming back with tickets saved usually means the draw is on: open straight to Check.
+        if (t.length) setTab('check');
+      })
       .catch(() => say('Couldn’t open saved tickets. Private browsing may block storage.'))
       .finally(() => setLoaded(true));
   }, [say]);
@@ -106,16 +112,16 @@ export default function App() {
   }, []);
 
   // One object URL per thumbnail, revoked when the ticket goes away.
-  const thumbCache = useRef(new Map());
+  const thumbCache = useRef(new Map<string, { blob: Blob | null; url: string | null }>());
   const thumbs = useMemo(() => {
     const cache = thumbCache.current;
-    const next = {};
-    const live = new Set();
+    const next: Record<string, string | null> = {};
+    const live = new Set<string>();
     for (const t of tickets) {
       live.add(t.id);
       let entry = cache.get(t.id);
       if (!entry || entry.blob !== t.thumb) {
-        if (entry) URL.revokeObjectURL(entry.url);
+        if (entry?.url) URL.revokeObjectURL(entry.url);
         entry = t.thumb ? { blob: t.thumb, url: URL.createObjectURL(t.thumb) } : { blob: null, url: null };
         cache.set(t.id, entry);
       }
@@ -129,20 +135,20 @@ export default function App() {
     return next;
   }, [tickets]);
 
-  const openFiles = (fileList) => {
+  const openFiles = (fileList: FileList | null | undefined) => {
     const files = [...(fileList || [])].filter((f) => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
     if (!files.length) return;
     warmUp();
     setSheet({ type: 'review', files });
   };
 
-  const addTickets = async (list) => {
+  const addTickets = async (list: Ticket[]) => {
     try {
       for (const t of list) await saveTicket(t);
       setTickets((cur) => [...cur, ...list]);
       setSheet(null);
       setTab('wallet');
-      say(list.length === 1 ? `Ticket ${list[0].number} added` : `${list.length} tickets added`);
+      say(list.length === 1 && list[0] ? `Ticket ${list[0].number} added` : `${list.length} tickets added`);
       requestPersistence();
     } catch {
       say('Couldn’t save. Your device may be out of storage.');
@@ -152,7 +158,7 @@ export default function App() {
   const ticketsRef = useRef(tickets);
   ticketsRef.current = tickets;
   const update = useCallback(
-    (id, patch) => {
+    (id: string, patch: TicketPatch) => {
       const t = ticketsRef.current.find((x) => x.id === id);
       if (!t) return;
       const saved = { ...t, ...patch };
@@ -163,7 +169,7 @@ export default function App() {
     [say],
   );
 
-  const remove = async (id) => {
+  const remove = async (id: string) => {
     await removeTicket(id);
     setTickets((cur) => cur.filter((t) => t.id !== id));
     setSheet(null);
@@ -180,7 +186,7 @@ export default function App() {
     say('Backup saved');
   };
 
-  const doImport = async (file) => {
+  const doImport = async (file: File) => {
     try {
       const incoming = await parseBackup(file);
       const have = new Set(tickets.map((t) => t.id));
@@ -190,15 +196,15 @@ export default function App() {
       say(fresh.length ? `Imported ${fresh.length} tickets` : 'Nothing new in that backup');
       setSheet(null);
     } catch (e) {
-      say(e.message || 'That file couldn’t be imported.');
+      say(e instanceof Error && e.message ? e.message : 'That file couldn’t be imported.');
     }
   };
 
   // Drop photos anywhere on desktop.
   useEffect(() => {
     let depth = 0;
-    const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
-    const enter = (e) => {
+    const hasFiles = (e: DragEvent) => [...(e.dataTransfer?.types || [])].includes('Files');
+    const enter = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       depth += 1;
       setDragging(true);
@@ -207,13 +213,13 @@ export default function App() {
       depth = Math.max(0, depth - 1);
       if (!depth) setDragging(false);
     };
-    const over = (e) => hasFiles(e) && e.preventDefault();
-    const drop = (e) => {
+    const over = (e: DragEvent) => hasFiles(e) && e.preventDefault();
+    const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
       depth = 0;
       setDragging(false);
-      openFiles(e.dataTransfer.files);
+      openFiles(e.dataTransfer?.files);
     };
     window.addEventListener('dragenter', enter);
     window.addEventListener('dragleave', leave);
@@ -279,7 +285,7 @@ export default function App() {
             <Settings size={22} />
           </button>
           {wide ? (
-            <button type="button" className="btn btn-primary" onClick={() => setSheet({ type: 'add' })} data-tour="add">
+            <button type="button" className="btn btn-primary" onClick={() => galleryRef.current?.click()} data-tour="add">
               <Plus size={20} strokeWidth={2.6} aria-hidden /> Add tickets
             </button>
           ) : null}
@@ -313,10 +319,10 @@ export default function App() {
       {!wide ? (
         <nav className="tabbar" aria-label="Sections">
           <button type="button" className={tab === 'wallet' ? 'is-on' : ''} aria-current={tab === 'wallet' ? 'page' : undefined} onClick={() => setTab('wallet')}>
-            <Ticket size={24} aria-hidden />
+            <TicketIcon size={24} aria-hidden />
             <span>Tickets</span>
           </button>
-          <button type="button" className="tab-add" onClick={() => setSheet({ type: 'add' })} aria-label="Add tickets">
+          <button type="button" className="tab-add" onClick={() => galleryRef.current?.click()} aria-label="Add tickets">
             <Plus size={30} strokeWidth={2.6} aria-hidden />
           </button>
           <button
@@ -355,27 +361,6 @@ export default function App() {
         }}
       />
 
-      {sheet?.type === 'add' ? (
-        <Sheet title="Add tickets" onClose={() => setSheet(null)}>
-          <div className="add-options">
-            <button type="button" className="add-option" onClick={() => cameraRef.current?.click()}>
-              <Camera size={28} aria-hidden />
-              <span>
-                <strong>Take a photo</strong>
-                <small>One ticket at a time with your camera.</small>
-              </span>
-            </button>
-            <button type="button" className="add-option" onClick={() => galleryRef.current?.click()}>
-              <Images size={28} aria-hidden />
-              <span>
-                <strong>Choose from gallery</strong>
-                <small>Select as many photos as you like. Great for a whole booklet.</small>
-              </span>
-            </button>
-          </div>
-          {wide ? <p className="fineprint center">Or drop photos anywhere on this page.</p> : null}
-        </Sheet>
-      ) : null}
       {sheet?.type === 'review' ? (
         <ReviewSheet
           files={sheet.files}

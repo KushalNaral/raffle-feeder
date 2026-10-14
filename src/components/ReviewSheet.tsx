@@ -1,41 +1,75 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { RotateCw, Trash2, ScanLine, LoaderCircle, TriangleAlert, Crosshair, Pointer } from 'lucide-react';
-import Sheet from './Sheet.jsx';
-import { loadImage, renderRotated, canvasToBlob } from '../image.js';
-import { readBox, guessWhole } from '../ocr.js';
-import { normalize, readLocal, uid, writeLocal } from '../util.js';
+import Sheet from './Sheet';
+import { loadImage, renderRotated, canvasToBlob } from '../image';
+import { readBox, guessWhole } from '../ocr';
+import { normalize, readLocal, uid, writeLocal } from '../util';
+import type { Box, Rotation, Ticket } from '../types';
 
 const TAP_W = 0.3;
 const TAP_H = 0.12;
 
-/** Drag (or tap) a box over the number on the photo. */
-function SpotPicker({ src, box, onBox, label, hint }) {
-  const ref = useRef(null);
-  const [draft, setDraft] = useState(null);
-  const start = useRef(null);
+interface Point {
+  x: number;
+  y: number;
+}
 
-  const point = (e) => {
-    const r = ref.current.getBoundingClientRect();
+/** The marked number spot, remembered across batches. */
+interface Spot {
+  rotation: Rotation;
+  box: Box;
+}
+
+type Status = 'loading' | 'reading' | 'read' | 'guessed' | 'none' | 'manual' | 'error';
+
+interface Item {
+  id: string;
+  file: File;
+  rotation: Rotation;
+  number: string;
+  status: Status;
+  box: Box | null;
+  src: string | null;
+  /** The user marked a box on this photo themselves. */
+  own?: boolean;
+}
+
+interface SpotPickerProps {
+  src: string | null;
+  box: Box | null;
+  onBox: (box: Box) => void;
+  label: string;
+  hint: boolean;
+}
+
+/** Drag (or tap) a box over the number on the photo. */
+function SpotPicker({ src, box, onBox, label, hint }: SpotPickerProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState<Box | null>(null);
+  const start = useRef<Point | null>(null);
+
+  const point = (e: PointerEvent): Point => {
+    const r = ref.current?.getBoundingClientRect() ?? new DOMRect(0, 0, 1, 1);
     return {
       x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
       y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
     };
   };
-  const onDown = (e) => {
+  const onDown = (e: PointerEvent) => {
     e.preventDefault();
-    ref.current.setPointerCapture(e.pointerId);
-    start.current = point(e);
-    setDraft({ ...start.current, w: 0, h: 0 });
+    ref.current?.setPointerCapture(e.pointerId);
+    const s = point(e);
+    start.current = s;
+    setDraft({ ...s, w: 0, h: 0 });
   };
-  const onMove = (e) => {
+  const onMove = (e: PointerEvent) => {
     if (!start.current) return;
     const p = point(e);
     const s = start.current;
     setDraft({ x: Math.min(s.x, p.x), y: Math.min(s.y, p.y), w: Math.abs(p.x - s.x), h: Math.abs(p.y - s.y) });
   };
-  const onUp = (e) => {
+  const onUp = (e: PointerEvent) => {
     if (!start.current) return;
-    const s = start.current;
     start.current = null;
     let b = draft;
     if (!b || b.w < 0.04 || b.h < 0.02) {
@@ -43,7 +77,7 @@ function SpotPicker({ src, box, onBox, label, hint }) {
       const p = point(e);
       b = {
         x: Math.min(1 - TAP_W, Math.max(0, p.x - TAP_W / 2)),
-        y: Math.min(1 - TAP_H, Math.max(0, (p.y ?? s.y) - TAP_H / 2)),
+        y: Math.min(1 - TAP_H, Math.max(0, p.y - TAP_H / 2)),
         w: TAP_W,
         h: TAP_H,
       };
@@ -91,7 +125,7 @@ function SpotPicker({ src, box, onBox, label, hint }) {
   );
 }
 
-const STATUS = {
+const STATUS: Record<Status, string> = {
   loading: 'Opening photo…',
   reading: 'Reading the number…',
   read: 'Read from the marked spot. Check it.',
@@ -101,21 +135,28 @@ const STATUS = {
   error: 'This photo couldn’t be opened.',
 };
 
-export default function ReviewSheet({ files, existing, onClose, onSave }) {
-  const [items, setItems] = useState(() =>
+interface ReviewSheetProps {
+  files: File[];
+  existing: string[];
+  onClose: () => void;
+  onSave: (tickets: Ticket[]) => Promise<void>;
+}
+
+export default function ReviewSheet({ files, existing, onClose, onSave }: ReviewSheetProps) {
+  const [items, setItems] = useState<Item[]>(() =>
     files.map((file) => ({ id: uid(), file, rotation: 0, number: '', status: 'loading', box: null, src: null })),
   );
-  const [spot, setSpot] = useState(() => readLocal('rf:spot', null));
+  const [spot, setSpot] = useState<Spot | null>(() => readLocal<Spot | null>('rf:spot', null));
   const [saving, setSaving] = useState(false);
   const [hinted, setHinted] = useState(() => readLocal('rf:hint-spot', false));
-  const media = useRef(new Map()); // id -> { img, canvas }
+  const media = useRef(new Map<string, { img: HTMLImageElement; canvas: HTMLCanvasElement | null }>());
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  const patch = useCallback((id, p) => setItems((list) => list.map((it) => (it.id === id ? { ...it, ...p } : it))), []);
+  const patch = useCallback((id: string, p: Partial<Item>) => setItems((list) => list.map((it) => (it.id === id ? { ...it, ...p } : it))), []);
 
   const render = useCallback(
-    async (id, rotation) => {
+    async (id: string, rotation: Rotation) => {
       const m = media.current.get(id);
       if (!m) return null;
       m.canvas = renderRotated(m.img, rotation, 1600);
@@ -134,7 +175,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   );
 
   const recognise = useCallback(
-    async (id, { box, auto }) => {
+    async (id: string, { box, auto = false }: { box: Box | null; auto?: boolean }) => {
       const m = media.current.get(id);
       if (!m?.canvas) return;
       patch(id, { status: 'reading', box: box || null });
@@ -189,13 +230,14 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
     [],
   );
 
-  const onBox = async (id, box) => {
+  const onBox = async (id: string, box: Box) => {
     if (!hinted) {
       setHinted(true);
       writeLocal('rf:hint-spot', true);
     }
     const it = itemsRef.current.find((x) => x.id === id);
-    const next = { rotation: it.rotation, box };
+    if (!it) return;
+    const next: Spot = { rotation: it.rotation, box };
     setSpot(next);
     writeLocal('rf:spot', next);
     patch(id, { status: 'reading', own: true });
@@ -209,15 +251,16 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
     }
   };
 
-  const rotate = async (id) => {
+  const rotate = async (id: string) => {
     const it = itemsRef.current.find((x) => x.id === id);
-    const r = (it.rotation + 90) % 360;
+    if (!it) return;
+    const r = ((it.rotation + 90) % 360) as Rotation;
     await render(id, r);
     if (spot && spot.rotation === r) recognise(id, { box: spot.box, auto: true });
     else patch(id, { box: null, own: false, status: it.status === 'manual' ? 'manual' : 'none' });
   };
 
-  const remove = (id) => {
+  const remove = (id: string) => {
     const it = itemsRef.current.find((x) => x.id === id);
     if (it?.src) URL.revokeObjectURL(it.src);
     media.current.delete(id);
@@ -230,7 +273,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   };
 
   const existingSet = new Set(existing.map(normalize));
-  const counts = new Map();
+  const counts = new Map<string, number>();
   for (const it of items) {
     const k = normalize(it.number);
     if (k) counts.set(k, (counts.get(k) || 0) + 1);
@@ -242,9 +285,10 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   const save = async () => {
     setSaving(true);
     try {
-      const out = [];
+      const out: Ticket[] = [];
       for (const it of usable) {
         const m = media.current.get(it.id);
+        if (!m?.canvas) continue;
         const image = await canvasToBlob(m.canvas, 0.82);
         const thumb = await canvasToBlob(renderRotated(m.img, it.rotation, 520), 0.8);
         out.push({
@@ -265,6 +309,16 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
   };
 
   const missing = usable.filter((it) => !normalize(it.number)).length;
+
+  // Enter moves to the next ticket still missing a number, or adds the batch when none are left.
+  const onEnter = (id: string) => {
+    const list = itemsRef.current.filter((it) => it.status !== 'error');
+    const from = list.findIndex((it) => it.id === id);
+    const order = [...list.slice(from + 1), ...list.slice(0, from)];
+    const next = order.find((it) => !normalize(it.number));
+    if (next) document.getElementById(`n-${next.id}`)?.focus();
+    else if (ready && !saving) save();
+  };
 
   return (
     <Sheet
@@ -305,7 +359,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
       <ol className="review-list">
         {items.map((it, i) => {
           const k = normalize(it.number);
-          const dupe = k && (existingSet.has(k) || counts.get(k) > 1);
+          const dupe = k && (existingSet.has(k) || (counts.get(k) ?? 0) > 1);
           return (
             <li key={it.id} className={`review-item status-${it.status}`}>
               <div className="review-photo">
@@ -337,9 +391,15 @@ export default function ReviewSheet({ files, existing, onClose, onSave }) {
                     value={it.number}
                     placeholder="—"
                     disabled={it.status === 'error'}
+                    enterKeyHint={missing > (normalize(it.number) ? 0 : 1) ? 'next' : 'done'}
                     onChange={(e) =>
                       patch(it.id, { number: e.target.value.replace(/\D/g, ''), status: 'manual' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      onEnter(it.id);
+                    }}
                   />
                   {it.status === 'reading' || it.status === 'loading' ? (
                     <LoaderCircle size={22} className="spin field-icon" aria-hidden />

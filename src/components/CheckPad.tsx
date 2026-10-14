@@ -1,27 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Delete, Check, Trophy, Undo2, PartyPopper } from 'lucide-react';
-import ScratchFoil from './ScratchFoil.jsx';
-import { FoilStrip } from './TicketCard.jsx';
-import { burst } from '../confetti.js';
-import { normalize, readLocal, toneFor, writeLocal } from '../util.js';
+import ScratchFoil from './ScratchFoil';
+import { FoilStrip } from './TicketCard';
+import { burst } from '../confetti';
+import { normalize, readLocal, toneFor, writeLocal } from '../util';
+import type { CheckEntry, Ticket, TicketPatch } from '../types';
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
+type Key = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'clear' | 'back';
+
+const KEYS: Key[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
+const isDigit = (k: string): k is Key => /^\d$/.test(k);
 const MAX = 6;
 
-export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) {
+interface CheckPadProps {
+  tickets: Ticket[];
+  thumbs: Record<string, string | null>;
+  onUpdate: (id: string, patch: TicketPatch) => void;
+  onOpen: (id: string) => void;
+  active: boolean;
+}
+
+export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }: CheckPadProps) {
   const [entry, setEntry] = useState('');
-  const [prizeFor, setPrizeFor] = useState(null);
+  const [prizeFor, setPrizeFor] = useState<string | null>(null);
   const [prize, setPrize] = useState('');
-  const [log, setLog] = useState(() => readLocal('rf:checks', []));
+  const [log, setLog] = useState<CheckEntry[]>(() => readLocal<CheckEntry[]>('rf:checks', []));
+  const [settled, setSettled] = useState('');
+  const settledRef = useRef('');
+  settledRef.current = settled;
   const loggedRef = useRef('');
-  const cardRef = useRef(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const index = useMemo(() => {
-    const m = new Map();
+    const m = new Map<string, Ticket[]>();
     for (const t of tickets) {
       const k = normalize(t.number);
-      if (!m.has(k)) m.set(k, []);
-      m.get(k).push(t);
+      const list = m.get(k);
+      if (list) list.push(t);
+      else m.set(k, [t]);
     }
     return m;
   }, [tickets]);
@@ -35,11 +51,15 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
   const state = !key ? 'idle' : matches.length ? 'match' : prefix ? 'partial' : 'miss';
   const revealed = state === 'match' || state === 'miss';
 
-  const press = (k) => {
+  const press = (k: Key) => {
     setPrizeFor(null);
+    const fresh = !!settledRef.current;
+    settledRef.current = '';
+    setSettled('');
     if (k === 'clear') return setEntry('');
     if (k === 'back') return setEntry((e) => e.slice(0, -1));
-    setEntry((e) => (e.length >= MAX ? e : e + k));
+    // Once a result has settled, the next digit starts the next called number.
+    setEntry((e) => (fresh ? k : e.length >= MAX ? e : e + k));
   };
 
   // Celebrate each new match once.
@@ -47,35 +67,39 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
   useEffect(() => {
     if (state === 'match' && celebrated.current !== key) {
       celebrated.current = key;
-      const id = setTimeout(() => burst(cardRef.current), 380);
+      const id = setTimeout(() => burst(cardRef.current), 240);
       return () => clearTimeout(id);
     }
     if (state !== 'match') celebrated.current = '';
   }, [state, key]);
 
-  // Log a check once the entry has settled for a moment.
+  // Once the entry has settled for a moment: log it, and mark matching tickets as called.
   useEffect(() => {
     if (!key) return;
     const id = setTimeout(() => {
+      const hits = index.get(key) || [];
+      if (!hits.length && [...index.keys()].some((k) => k.startsWith(key))) return; // still mid-number
+      setSettled(key);
       if (loggedRef.current === key) return;
       loggedRef.current = key;
+      for (const t of hits) if (!t.called) onUpdate(t.id, { called: true, calledAt: Date.now() });
       setLog((l) => {
-        const next = [{ n: key, hit: (index.get(key) || []).length > 0 }, ...l.filter((x) => x.n !== key)].slice(0, 12);
+        const next = [{ n: key, hit: hits.length > 0 }, ...l.filter((x) => x.n !== key)].slice(0, 12);
         writeLocal('rf:checks', next);
         return next;
       });
-    }, 1400);
+    }, 1200);
     return () => clearTimeout(id);
-  }, [key, index]);
+  }, [key, index, onUpdate]);
 
   // Physical keyboard support when the pad is on screen.
   useEffect(() => {
     if (!active) return;
-    const onKey = (e) => {
-      const tag = e.target?.tagName;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
       if (document.querySelector('.sheet-layer')) return;
-      if (/^\d$/.test(e.key)) press(e.key);
+      if (isDigit(e.key)) press(e.key);
       else if (e.key === 'Backspace') press('back');
       else if (e.key === 'Escape' || e.key === 'Delete') press('clear');
       else return;
@@ -85,9 +109,9 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
     return () => window.removeEventListener('keydown', onKey);
   }, [active]);
 
-  const markCalled = (t) => onUpdate(t.id, { called: true, calledAt: t.calledAt || Date.now() });
-  const undoCalled = (t) => onUpdate(t.id, { called: false, calledAt: null, prize: '' });
-  const savePrize = (t) => {
+  const markCalled = (t: Ticket) => onUpdate(t.id, { called: true, calledAt: t.calledAt || Date.now() });
+  const undoCalled = (t: Ticket) => onUpdate(t.id, { called: false, calledAt: null, prize: '' });
+  const savePrize = (t: Ticket) => {
     onUpdate(t.id, { called: true, calledAt: t.calledAt || Date.now(), prize: prize.trim() || 'Prize' });
     setPrizeFor(null);
     setPrize('');
@@ -127,6 +151,8 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
           <p className="check-hint">
             {prefix} of your tickets start with {key}
           </p>
+        ) : settled && settled === key ? (
+          <p className="check-hint">{state === 'match' ? 'Marked as called. ' : ''}Type the next number</p>
         ) : null}
       </div>
 
@@ -135,7 +161,7 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
           matches.map((t) => (
             <div key={t.id} className="match">
               <button type="button" className="match-ticket" onClick={() => onOpen(t.id)} aria-label={`Open ticket ${t.number}`}>
-                <span className="match-photo">{thumbs[t.id] ? <img src={thumbs[t.id]} alt="" /> : null}</span>
+                <span className="match-photo">{thumbs[t.id] ? <img src={thumbs[t.id] ?? undefined} alt="" /> : null}</span>
                 <FoilStrip ticket={t} />
               </button>
               {prizeFor === t.id ? (
@@ -195,7 +221,10 @@ export default function CheckPad({ tickets, thumbs, onUpdate, onOpen, active }) 
                   <button
                     type="button"
                     className={`log-chip${c.hit ? ' is-hit' : ''}`}
-                    onClick={() => setEntry(c.n)}
+                    onClick={() => {
+                      setSettled('');
+                      setEntry(c.n);
+                    }}
                     aria-label={`${c.n}, ${c.hit ? 'yours' : 'not yours'}`}
                   >
                     {c.n}
