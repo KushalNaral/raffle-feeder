@@ -2,8 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// GitHub Pages serves the project at /<repo>/
-const base = process.env.BASE_PATH || '/raffle-feeder/';
+// Served from the domain root by default (Vercel, Netlify, Cloudflare).
+// The GitHub Pages workflow sets BASE_PATH=/<repo>/.
+const base = process.env.BASE_PATH || '/';
 
 export default defineConfig({
   base,

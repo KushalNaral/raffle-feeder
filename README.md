@@ -18,8 +18,13 @@ Raffle Feeder keeps your paper raffle tickets in a phone wallet. Photograph your
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/raffle-feeder/
+npm run dev      # http://localhost:5173/
 npm run build
 ```
 
-Every push to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. In the repo, under Settings → Pages, set Source to **GitHub Actions**.
+## Deploy
+
+It's a static Vite app. Any of these hosts works for free:
+
+- **Vercel / Netlify / Cloudflare Pages:** import the repo. Build command `npm run build`, output folder `dist`.
+- **GitHub Pages:** `.github/workflows/deploy.yml` deploys on every push to `main`. In Settings → Pages, set Source to **GitHub Actions**.
