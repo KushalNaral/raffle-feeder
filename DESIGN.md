@@ -216,7 +216,7 @@ The live foil is a gradient token, not a flat colour: `linear-gradient(115deg, #
 
 Phone-first, single column inside a 560px main column with a 16px side gutter. The wallet is a two-column deck (14px gap; 10px under 380px). A floating tab bar (68px tall, inset 12px from the edges and 10px from the bottom, safe-area aware) holds Tickets, a raised Add button and Check. The Check view fills the viewport height: check card on top, a scrolling result area, and the keypad pinned to the bottom.
 
-When the layout goes wide the main area becomes a 1240px grid of `minmax(0, 1fr) 420px` with a 40px gap: the deck auto-fills 200px-minimum cards on the left, and the Check card plus keypad dock sticky on the right, sized to the viewport (max 860px). The tab bar disappears and Add moves into the top bar. Sheets are bottom sheets on phone and centred dialogs (540px, 880px wide variant) from 720px.
+From 960px the main area becomes a 1240px grid of `minmax(0, 1fr) 420px` with a 40px gap: the deck auto-fills 200px-minimum cards on the left, and the Check card plus keypad dock sticky on the right, sized to the viewport (max 860px). The tab bar disappears and Add moves into the top bar. Sheets are bottom sheets on phone and centred dialogs (540px, 880px wide variant) from 720px.
 
 Spacing runs on a tight 8-22px rhythm (8, 10, 14, 18, 22) with 16px gutters; larger gaps only appear between major regions.
 

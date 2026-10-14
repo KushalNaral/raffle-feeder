@@ -1,0 +1,535 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T00:00:00Z",
+  "title": "Design System: Raffle Feeder",
+  "extensions": {
+    "colorMeta": {
+      "night-violet": {
+        "role": "neutral",
+        "displayName": "Night Violet",
+        "canonical": "oklch(0.2 0.075 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.075 295)",
+          "oklch(0.26 0.075 295)",
+          "oklch(0.37 0.075 295)",
+          "oklch(0.48 0.075 295)",
+          "oklch(0.60 0.075 295)",
+          "oklch(0.71 0.075 295)",
+          "oklch(0.83 0.075 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "night-violet-raised": {
+        "role": "neutral",
+        "displayName": "Night Violet Raised",
+        "canonical": "oklch(0.245 0.085 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.085 295)",
+          "oklch(0.26 0.085 295)",
+          "oklch(0.37 0.085 295)",
+          "oklch(0.48 0.085 295)",
+          "oklch(0.60 0.085 295)",
+          "oklch(0.71 0.085 295)",
+          "oklch(0.83 0.085 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "plum-surface": {
+        "role": "neutral",
+        "displayName": "Plum Surface",
+        "canonical": "oklch(0.3 0.09 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.090 295)",
+          "oklch(0.26 0.090 295)",
+          "oklch(0.37 0.090 295)",
+          "oklch(0.48 0.090 295)",
+          "oklch(0.60 0.090 295)",
+          "oklch(0.71 0.090 295)",
+          "oklch(0.83 0.090 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "plum-surface-hi": {
+        "role": "neutral",
+        "displayName": "Plum Surface High",
+        "canonical": "oklch(0.355 0.1 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 295)",
+          "oklch(0.26 0.100 295)",
+          "oklch(0.37 0.100 295)",
+          "oklch(0.48 0.100 295)",
+          "oklch(0.60 0.100 295)",
+          "oklch(0.71 0.100 295)",
+          "oklch(0.83 0.096 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "plum-line": {
+        "role": "neutral",
+        "displayName": "Plum Line",
+        "canonical": "oklch(0.41 0.085 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.085 295)",
+          "oklch(0.26 0.085 295)",
+          "oklch(0.37 0.085 295)",
+          "oklch(0.48 0.085 295)",
+          "oklch(0.60 0.085 295)",
+          "oklch(0.71 0.085 295)",
+          "oklch(0.83 0.085 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "chalk-ink": {
+        "role": "neutral",
+        "displayName": "Chalk Ink",
+        "canonical": "oklch(0.985 0.008 300)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 300)",
+          "oklch(0.26 0.008 300)",
+          "oklch(0.37 0.008 300)",
+          "oklch(0.48 0.008 300)",
+          "oklch(0.60 0.008 300)",
+          "oklch(0.71 0.008 300)",
+          "oklch(0.83 0.008 300)",
+          "oklch(0.95 0.008 300)"
+        ]
+      },
+      "lilac-ink": {
+        "role": "neutral",
+        "displayName": "Lilac Ink",
+        "canonical": "oklch(0.87 0.04 300)",
+        "tonalRamp": [
+          "oklch(0.15 0.040 300)",
+          "oklch(0.26 0.040 300)",
+          "oklch(0.37 0.040 300)",
+          "oklch(0.48 0.040 300)",
+          "oklch(0.60 0.040 300)",
+          "oklch(0.71 0.040 300)",
+          "oklch(0.83 0.040 300)",
+          "oklch(0.95 0.040 300)"
+        ]
+      },
+      "dusk-ink": {
+        "role": "neutral",
+        "displayName": "Dusk Ink",
+        "canonical": "oklch(0.75 0.06 300)",
+        "tonalRamp": [
+          "oklch(0.15 0.060 300)",
+          "oklch(0.26 0.060 300)",
+          "oklch(0.37 0.060 300)",
+          "oklch(0.48 0.060 300)",
+          "oklch(0.60 0.060 300)",
+          "oklch(0.71 0.060 300)",
+          "oklch(0.83 0.060 300)",
+          "oklch(0.95 0.059 300)"
+        ]
+      },
+      "card-ink": {
+        "role": "neutral",
+        "displayName": "Card Ink",
+        "canonical": "oklch(0.2 0.07 295)",
+        "tonalRamp": [
+          "oklch(0.15 0.070 295)",
+          "oklch(0.26 0.070 295)",
+          "oklch(0.37 0.070 295)",
+          "oklch(0.48 0.070 295)",
+          "oklch(0.60 0.070 295)",
+          "oklch(0.71 0.070 295)",
+          "oklch(0.83 0.070 295)",
+          "oklch(0.95 0.059 295)"
+        ]
+      },
+      "hot-coral": {
+        "role": "primary",
+        "displayName": "Hot Coral",
+        "canonical": "oklch(0.72 0.19 30)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 30)",
+          "oklch(0.26 0.117 30)",
+          "oklch(0.37 0.133 30)",
+          "oklch(0.48 0.140 30)",
+          "oklch(0.60 0.136 30)",
+          "oklch(0.71 0.122 30)",
+          "oklch(0.83 0.096 30)",
+          "oklch(0.95 0.059 30)"
+        ]
+      },
+      "hot-coral-hi": {
+        "role": "primary",
+        "displayName": "Hot Coral Bright",
+        "canonical": "oklch(0.77 0.17 34)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 34)",
+          "oklch(0.26 0.117 34)",
+          "oklch(0.37 0.133 34)",
+          "oklch(0.48 0.140 34)",
+          "oklch(0.60 0.136 34)",
+          "oklch(0.71 0.122 34)",
+          "oklch(0.83 0.096 34)",
+          "oklch(0.95 0.059 34)"
+        ]
+      },
+      "acid-lime": {
+        "role": "secondary",
+        "displayName": "Acid Lime",
+        "canonical": "oklch(0.91 0.19 124)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 124)",
+          "oklch(0.26 0.117 124)",
+          "oklch(0.37 0.133 124)",
+          "oklch(0.48 0.140 124)",
+          "oklch(0.60 0.136 124)",
+          "oklch(0.71 0.122 124)",
+          "oklch(0.83 0.096 124)",
+          "oklch(0.95 0.059 124)"
+        ]
+      },
+      "mint": {
+        "role": "secondary",
+        "displayName": "Mint",
+        "canonical": "oklch(0.87 0.13 172)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 172)",
+          "oklch(0.26 0.117 172)",
+          "oklch(0.37 0.130 172)",
+          "oklch(0.48 0.130 172)",
+          "oklch(0.60 0.130 172)",
+          "oklch(0.71 0.122 172)",
+          "oklch(0.83 0.096 172)",
+          "oklch(0.95 0.059 172)"
+        ]
+      },
+      "cobalt": {
+        "role": "tertiary",
+        "displayName": "Cobalt",
+        "canonical": "oklch(0.56 0.21 266)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 266)",
+          "oklch(0.26 0.117 266)",
+          "oklch(0.37 0.133 266)",
+          "oklch(0.48 0.140 266)",
+          "oklch(0.60 0.136 266)",
+          "oklch(0.71 0.122 266)",
+          "oklch(0.83 0.096 266)",
+          "oklch(0.95 0.059 266)"
+        ]
+      },
+      "tangerine": {
+        "role": "tertiary",
+        "displayName": "Tangerine",
+        "canonical": "oklch(0.81 0.15 66)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 66)",
+          "oklch(0.26 0.117 66)",
+          "oklch(0.37 0.133 66)",
+          "oklch(0.48 0.140 66)",
+          "oklch(0.60 0.136 66)",
+          "oklch(0.71 0.122 66)",
+          "oklch(0.83 0.096 66)",
+          "oklch(0.95 0.059 66)"
+        ]
+      },
+      "bubblegum": {
+        "role": "tertiary",
+        "displayName": "Bubblegum",
+        "canonical": "oklch(0.81 0.12 350)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 350)",
+          "oklch(0.26 0.117 350)",
+          "oklch(0.37 0.120 350)",
+          "oklch(0.48 0.120 350)",
+          "oklch(0.60 0.120 350)",
+          "oklch(0.71 0.120 350)",
+          "oklch(0.83 0.096 350)",
+          "oklch(0.95 0.059 350)"
+        ]
+      },
+      "danger-red": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "oklch(0.68 0.2 22)",
+        "tonalRamp": [
+          "oklch(0.15 0.091 22)",
+          "oklch(0.26 0.117 22)",
+          "oklch(0.37 0.133 22)",
+          "oklch(0.48 0.140 22)",
+          "oklch(0.60 0.136 22)",
+          "oklch(0.71 0.122 22)",
+          "oklch(0.83 0.096 22)",
+          "oklch(0.95 0.059 22)"
+        ]
+      },
+      "foil-flat": {
+        "role": "neutral",
+        "displayName": "Foil Silver",
+        "canonical": "#dfe2ec",
+        "tonalRamp": [
+          "oklch(0.15 0.015 275)",
+          "oklch(0.26 0.015 275)",
+          "oklch(0.37 0.015 275)",
+          "oklch(0.48 0.015 275)",
+          "oklch(0.60 0.015 275)",
+          "oklch(0.71 0.015 275)",
+          "oklch(0.83 0.015 275)",
+          "oklch(0.95 0.015 275)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The called number on the check card. One per screen."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Ticket number on each scratch card; 72px on the ticket hero."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet titles; 36px for the empty-state headline, 24px for the wordmark."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "UI copy with tabular numerals on."
+      },
+      "label": {
+        "displayName": "Strip Label",
+        "purpose": "Uppercase text on foil/status strips and the reveal panel."
+      }
+    },
+    "materials": [
+      {
+        "name": "foil",
+        "value": "linear-gradient(115deg, #c9ccd8 0%, #f4c9ec 22%, #c3edf7 44%, #e7f7c0 64%, #f6dcc0 82%, #cfd2de 100%)",
+        "purpose": "Holographic foil for pending status strips, layered under a 120px fractal-noise sparkle grain."
+      },
+      {
+        "name": "grain",
+        "value": "SVG feTurbulence fractalNoise, baseFrequency 1.1, 2 octaves, 120px tile, soft-light on card stock",
+        "purpose": "Printed card-stock and foil sparkle texture."
+      },
+      {
+        "name": "ground-dots",
+        "value": "radial-gradient(oklch(0.42 0.11 300 / 0.35) 1.2px, transparent 1.6px) 26px 26px",
+        "purpose": "Faint confetti-dot texture on the night-violet ground."
+      },
+      {
+        "name": "perforation",
+        "value": "mask: radial-gradient(circle 5px at 50% 0, #0000 96%, #000) 0 0 / 16px 100% repeat-x",
+        "purpose": "Torn perforated top edge on scratch cards."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "card-bevel",
+        "value": "inset 0 2px 0 oklch(1 0 0 / 0.28), inset 0 -4px 0 oklch(0 0 0 / 0.14)",
+        "purpose": "Printed card-stock edge light on scratch cards."
+      },
+      {
+        "name": "key-bevel",
+        "value": "inset 0 2px 0 oklch(1 0 0 / 0.1), inset 0 -5px 0 oklch(0.14 0.06 295 / 0.55)",
+        "purpose": "Candy keypad keys at rest; bottom inset drops to -2px when pressed."
+      },
+      {
+        "name": "button-bevel",
+        "value": "inset 0 -3px 0 oklch(0 0 0 / 0.18)",
+        "purpose": "Filled buttons at rest; -1px when pressed."
+      },
+      {
+        "name": "deck-lift",
+        "value": "drop-shadow(0 10px 18px oklch(0.08 0.06 295 / 0.5))",
+        "purpose": "Filter on card wrappers so the shadow follows the perforated edge."
+      },
+      {
+        "name": "check-card",
+        "value": "inset 0 2px 0 oklch(1 0 0 / 0.22), inset 0 -5px 0 oklch(0 0 0 / 0.16), 0 14px 30px oklch(0.08 0.06 295 / 0.5)",
+        "purpose": "The big check scratch card."
+      },
+      {
+        "name": "float",
+        "value": "0 14px 34px oklch(0.06 0.05 295 / 0.6)",
+        "purpose": "Floating tab bar."
+      },
+      {
+        "name": "sheet",
+        "value": "0 -12px 40px oklch(0.05 0.05 295 / 0.6)",
+        "purpose": "Bottom sheets rising from the edge."
+      },
+      {
+        "name": "toast",
+        "value": "0 10px 30px oklch(0.05 0.05 295 / 0.5)",
+        "purpose": "Lime confirmation toasts."
+      }
+    ],
+    "motion": [
+      {
+        "name": "spring",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Deliberate playful overshoot, scoped to small press and pop interactions: button/chip/key press (0.2-0.25s), Add button and card hover (0.3-0.35s), switch thumb, match-number pop and toast entry (0.45-0.5s). Not for large moves or anything being read."
+      },
+      {
+        "name": "sheen",
+        "value": "6s ease-in-out infinite alternate",
+        "purpose": "Slow drift of the holographic foil gradient on pending strips."
+      },
+      {
+        "name": "state-fade",
+        "value": "0.2s ease",
+        "purpose": "Colour, background and border changes on hover and focus."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation/transition-duration 0.01ms",
+        "purpose": "All motion collapses under prefers-reduced-motion; foil scratch resolves instantly."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "small-phone",
+        "value": "max-width: 380px"
+      },
+      {
+        "name": "sheet-dialog",
+        "value": "min-width: 720px"
+      },
+      {
+        "name": "wide",
+        "value": "min-width: 960px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Hot coral candy pill for the main action (Add tickets, Take a photo).",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Add tickets</button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:50px; padding:0 20px; border:0; border-radius:999px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-weight:700; font-size:16px; cursor:pointer; box-shadow: inset 0 -3px 0 oklch(0 0 0 / 0.18); transition: transform 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1)), background-color 0.2s; } .ds-btn:hover { transform: translateY(-1px); } .ds-btn:active { transform: translateY(1px) scale(0.97); box-shadow: inset 0 -1px 0 oklch(0 0 0 / 0.18); } .ds-btn:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; } .ds-btn-primary { background: var(--coral, oklch(0.72 0.19 30)); color: var(--card-ink, oklch(0.2 0.07 295)); } .ds-btn-primary:hover { background: var(--coral-hi, oklch(0.77 0.17 34)); }"
+    },
+    {
+      "name": "Win Button",
+      "kind": "button",
+      "refersTo": "button-win",
+      "description": "Acid lime pill for marking a ticket Won / saving a prize.",
+      "html": "<button class=\"ds-btn-win\">Won a prize</button>",
+      "css": ".ds-btn-win { min-height:50px; padding:0 20px; border:0; border-radius:999px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-weight:700; font-size:16px; cursor:pointer; background: var(--lime, oklch(0.91 0.19 124)); color: var(--card-ink, oklch(0.2 0.07 295)); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 0.18); transition: transform 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1)); } .ds-btn-win:hover { transform: translateY(-1px); } .ds-btn-win:active { transform: translateY(1px) scale(0.97); box-shadow: inset 0 -1px 0 oklch(0 0 0 / 0.18); } .ds-btn-win:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Plum surface pill for secondary actions (Choose photos, Undo).",
+      "html": "<button class=\"ds-btn-quiet\">Choose photos</button>",
+      "css": ".ds-btn-quiet { min-height:50px; padding:0 20px; border:0; border-radius:999px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-weight:700; font-size:16px; cursor:pointer; background: var(--surface, oklch(0.3 0.09 295)); color: var(--ink, oklch(0.985 0.008 300)); box-shadow: inset 0 -3px 0 oklch(0 0 0 / 0.18); transition: transform 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1)), background-color 0.2s; } .ds-btn-quiet:hover { background: var(--surface-2, oklch(0.355 0.1 295)); transform: translateY(-1px); } .ds-btn-quiet:active { transform: translateY(1px) scale(0.97); } .ds-btn-quiet:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; }"
+    },
+    {
+      "name": "Filter Chips",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "All / Called / Won filters; selected chip inverts to chalk.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip is-on\">All <span>12</span></button><button class=\"ds-chip\">Called <span>3</span></button><button class=\"ds-chip\">Won <span>1</span></button></div>",
+      "css": ".ds-chips { display:flex; gap:8px; } .ds-chip { min-height:40px; padding:0 16px; border-radius:999px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-weight:700; font-size:15px; cursor:pointer; color: var(--ink-2, oklch(0.87 0.04 300)); background: var(--ground-2, oklch(0.245 0.085 295)); border: 2px solid var(--line, oklch(0.41 0.085 295)); transition: background-color 0.2s, color 0.2s, transform 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1)); } .ds-chip span { font-weight:600; opacity:0.65; } .ds-chip:hover { color: var(--ink, oklch(0.985 0.008 300)); } .ds-chip:active { transform: scale(0.95); } .ds-chip:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; } .ds-chip.is-on { background: var(--ink, oklch(0.985 0.008 300)); border-color: var(--ink, oklch(0.985 0.008 300)); color: var(--card-ink, oklch(0.2 0.07 295)); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Raised violet field with 2px plum border; border turns lime on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Prize (optional)\" />",
+      "css": ".ds-input { width:100%; min-height:54px; border-radius:16px; border:2px solid var(--line, oklch(0.41 0.085 295)); background: var(--ground-2, oklch(0.245 0.085 295)); color: var(--ink, oklch(0.985 0.008 300)); padding:0 16px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-size:17px; font-weight:500; transition: border-color 0.2s; } .ds-input::placeholder { color: var(--ink-3, oklch(0.75 0.06 300)); } .ds-input:hover { border-color: var(--surface-2, oklch(0.355 0.1 295)); } .ds-input:focus, .ds-input:focus-visible { outline:none; border-color: var(--lime, oklch(0.91 0.19 124)); }"
+    },
+    {
+      "name": "Scratch Card",
+      "kind": "card",
+      "refersTo": "scratch-card",
+      "description": "A ticket: card-stock tone, perforated top edge, squeezed number, photo inset and foil status strip.",
+      "html": "<button class=\"ds-tcard\"><span class=\"ds-tcard-no\">361</span><span class=\"ds-tcard-photo\"></span><span class=\"ds-strip\">Draw pending</span></button>",
+      "css": ".ds-tcard { display:grid; gap:10px; width:200px; padding:14px 14px 16px; border:0; border-radius:24px; text-align:left; cursor:pointer; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; background: var(--coral, oklch(0.72 0.19 30)); color: var(--card-ink, oklch(0.2 0.07 295)); box-shadow: inset 0 2px 0 oklch(1 0 0 / 0.28), inset 0 -4px 0 oklch(0 0 0 / 0.14); -webkit-mask: radial-gradient(circle 5px at 50% 0, #0000 96%, #000) 0 0 / 16px 100% repeat-x; mask: radial-gradient(circle 5px at 50% 0, #0000 96%, #000) 0 0 / 16px 100% repeat-x; transition: transform 0.35s var(--spring, cubic-bezier(0.34,1.56,0.64,1)); } .ds-tcard:hover { transform: translateY(-4px) rotate(-0.8deg); } .ds-tcard:active { transform: scale(0.97); } .ds-tcard:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; } .ds-tcard-no { font-size:52px; font-weight:800; font-stretch:75%; letter-spacing:-0.02em; line-height:0.95; padding-top:4px; font-variant-numeric: tabular-nums; } .ds-tcard-photo { display:block; aspect-ratio:16/10; border-radius:14px; background: oklch(0.15 0.05 295 / 0.25); } .ds-strip { display:flex; align-items:center; justify-content:center; min-height:38px; border-radius:12px; font-size:13px; font-weight:800; font-stretch:85%; letter-spacing:0.02em; text-transform:uppercase; color: oklch(0.32 0.07 295 / 0.85); background: linear-gradient(115deg, #c9ccd8 0%, #f4c9ec 22%, #c3edf7 44%, #e7f7c0 64%, #f6dcc0 82%, #cfd2de 100%); background-size:220% 100%; }"
+    },
+    {
+      "name": "Keypad Key",
+      "kind": "custom",
+      "refersTo": "keypad-key",
+      "description": "Chunky candy key with a bottom bevel that compresses on press.",
+      "html": "<div class=\"ds-keypad\"><button class=\"ds-key\">1</button><button class=\"ds-key\">2</button><button class=\"ds-key\">3</button></div>",
+      "css": ".ds-keypad { display:grid; grid-template-columns: repeat(3, 72px); gap:10px; } .ds-key { height:62px; border:0; border-radius:20px; cursor:pointer; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-size:30px; font-weight:800; font-stretch:85%; color: var(--ink, oklch(0.985 0.008 300)); background: var(--surface, oklch(0.3 0.09 295)); box-shadow: inset 0 2px 0 oklch(1 0 0 / 0.1), inset 0 -5px 0 oklch(0.14 0.06 295 / 0.55); transition: background-color 0.15s, transform 0.2s var(--spring, cubic-bezier(0.34,1.56,0.64,1)), box-shadow 0.15s; } .ds-key:hover { background: var(--surface-2, oklch(0.355 0.1 295)); } .ds-key:active { transform: translateY(3px); background: var(--surface-2, oklch(0.355 0.1 295)); box-shadow: inset 0 2px 0 oklch(1 0 0 / 0.1), inset 0 -2px 0 oklch(0.14 0.06 295 / 0.55); } .ds-key:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-add",
+      "description": "Floating bottom bar with Tickets, the raised tilted coral Add button, and Check.",
+      "html": "<nav class=\"ds-tabbar\"><button class=\"ds-tab is-on\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z\"/><path d=\"M13 5v2\"/><path d=\"M13 17v2\"/><path d=\"M13 11v2\"/></svg><span>Tickets</span></button><button class=\"ds-tab-add\" aria-label=\"Add tickets\"><svg width=\"30\" height=\"30\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></button><button class=\"ds-tab\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"4\" x2=\"20\" y1=\"9\" y2=\"9\"/><line x1=\"4\" x2=\"20\" y1=\"15\" y2=\"15\"/><line x1=\"10\" x2=\"8\" y1=\"3\" y2=\"21\"/><line x1=\"16\" x2=\"14\" y1=\"3\" y2=\"21\"/></svg><span>Check</span></button></nav>",
+      "css": ".ds-tabbar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; width:340px; height:68px; margin-top:36px; padding:0 10px; border-radius:26px; background: oklch(0.27 0.09 295); border:2px solid var(--line, oklch(0.41 0.085 295)); box-shadow: 0 14px 34px oklch(0.06 0.05 295 / 0.6); font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; } .ds-tab { height:100%; display:grid; place-content:center; justify-items:center; gap:2px; border:0; background:none; cursor:pointer; color: var(--ink-3, oklch(0.75 0.06 300)); font-size:13px; font-weight:700; } .ds-tab:hover { color: var(--ink-2, oklch(0.87 0.04 300)); } .ds-tab.is-on { color: var(--lime, oklch(0.91 0.19 124)); } .ds-tab:focus-visible, .ds-tab-add:focus-visible { outline: 3px solid var(--lime, oklch(0.91 0.19 124)); outline-offset: 3px; } .ds-tab-add { width:66px; height:66px; border:0; border-radius:24px; cursor:pointer; display:grid; place-items:center; margin-top:-30px; background: var(--coral, oklch(0.72 0.19 30)); color: var(--card-ink, oklch(0.2 0.07 295)); transform: rotate(-6deg); box-shadow: inset 0 -5px 0 oklch(0 0 0 / 0.16), 0 12px 24px oklch(0.06 0.05 295 / 0.6), 0 0 0 6px var(--ground, oklch(0.2 0.075 295)); transition: transform 0.3s var(--spring, cubic-bezier(0.34,1.56,0.64,1)); } .ds-tab-add:hover { transform: rotate(0deg) scale(1.04); } .ds-tab-add:active { transform: rotate(0deg) scale(0.93); }"
+    },
+    {
+      "name": "Foil Status Strip",
+      "kind": "custom",
+      "refersTo": "scratch-card",
+      "description": "Pending is holographic foil; called is card ink with mint; won is card ink with lime.",
+      "html": "<div class=\"ds-strips\"><span class=\"ds-fstrip ds-fstrip-foil\">Draw pending</span><span class=\"ds-fstrip ds-fstrip-called\">Called · 7:42 PM</span><span class=\"ds-fstrip ds-fstrip-won\">Winner · Rice cooker</span></div>",
+      "css": ".ds-strips { display:grid; gap:8px; width:200px; } .ds-fstrip { display:flex; align-items:center; justify-content:center; min-height:38px; padding:0 10px; border-radius:12px; font-family:'Bricolage Grotesque Variable', system-ui, sans-serif; font-size:13px; font-weight:800; font-stretch:85%; letter-spacing:0.02em; text-transform:uppercase; } .ds-fstrip-foil { color: oklch(0.32 0.07 295 / 0.85); background: linear-gradient(115deg, #c9ccd8 0%, #f4c9ec 22%, #c3edf7 44%, #e7f7c0 64%, #f6dcc0 82%, #cfd2de 100%); background-size:220% 100%; animation: ds-sheen 6s ease-in-out infinite alternate; } .ds-fstrip-called { background: var(--card-ink, oklch(0.2 0.07 295)); color: var(--mint, oklch(0.87 0.13 172)); } .ds-fstrip-won { background: var(--card-ink, oklch(0.2 0.07 295)); color: var(--lime, oklch(0.91 0.19 124)); } @keyframes ds-sheen { to { background-position: 100% 0; } } @media (prefers-reduced-motion: reduce) { .ds-fstrip-foil { animation:none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instant Scratch Card",
+    "overview": "Every ticket is a punchy, printed scratch card dealt onto a deep night-violet table. The ground is dark, quiet and dotted with faint confetti; everything the owner touches is loud card stock in hot coral, cobalt, acid lime, tangerine or bubblegum, each with its own ink. The one real material is holographic silver foil: a pastel conic-style sheen with sparkle grain that covers what is still unknown and gets scratched away when a number is called.\n\nThe system is built for a crowded hall and one hand. Numbers are huge, condensed and tabular; targets are fat and pill-shaped or candy-chunky; depth is a bevel you can press. Motion is playful but short: things pop, deal and spring back, and then sit still so a number can be read at arm's length.\n\nGrey list rows and the premium-wallet look are rejected for this world: tickets are never rendered as quiet table rows or as sober leather-and-gold wallet passes.",
+    "keyCharacteristics": [
+      "Dark night-violet ground with a 26px confetti-dot pattern; colour lives on the cards, not the chrome.",
+      "Five card-stock tones assigned per ticket number, each paired with its own ink.",
+      "Holographic foil as the status material: pending is foil, called and won are the foil scratched off.",
+      "Bricolage Grotesque throughout; condensed weight 800 for numerals and the wordmark, normal width for UI copy.",
+      "Candy depth: inset top highlight plus inset bottom bevel that compresses on press.",
+      "Springy overshoot on small press and pop interactions only."
+    ],
+    "rules": [
+      {
+        "name": "The Colour Lives On The Card Rule",
+        "body": "Saturated tones belong to cards, the Add button, and status signals. Chrome (top bar, sheets, chips, keypad) stays in the violet neutrals.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tone Carries Its Ink Rule",
+        "body": "A card tone is always set as a pair: background tone plus its ink (card ink on coral, lime, tangerine, bubblegum; chalk ink on cobalt). Never put text on a tone without its paired ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Signals Rule",
+        "body": "Lime means yours / won; mint means called. Do not swap them or use either decoratively on the ground.",
+        "section": "colors"
+      },
+      {
+        "name": "The Squeezed Numeral Rule",
+        "body": "Every ticket number, called number and key cap is weight 800 at reduced width (75-85%). Width does the shouting; never add size beyond the clamps to make a number louder.",
+        "section": "typography"
+      },
+      {
+        "name": "The Uppercase Is Foil Rule",
+        "body": "Uppercase is reserved for text printed on a strip or the reveal panel (DRAW PENDING, CALLED, IT'S YOURS). UI copy stays sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Press-The-Bevel Rule",
+        "body": "Anything chunky that can be pressed shows a bottom bevel at rest and loses most of it on `:active`, with a 1-3px downward move. Flat elements (chips, icon buttons, fields) don't fake one.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** assign a card tone from the five card-stock colours by ticket number and always pair it with its ink.",
+      "**Do** use the holographic foil (gradient plus sparkle grain) for anything not yet revealed, and scratch it off to show called or won.",
+      "**Do** set every number in Bricolage Grotesque weight 800 at 75-85% width with tabular figures.",
+      "**Do** give pressable chunky elements a bottom bevel that compresses on press.",
+      "**Do** use the spring easing (`cubic-bezier(0.34, 1.56, 0.64, 1)`) for small press and pop interactions: buttons, chips, keys, the Add button, switch thumbs, card hover, the match pop and toasts.",
+      "**Do** keep touch targets at 44px minimum, and 50px+ for primary actions.",
+      "**Do** honour reduced motion: animations and transitions collapse to near zero."
+    ],
+    "donts": [
+      "**Don't** render tickets as grey list rows or in a premium-wallet register.",
+      "**Don't** put saturated card tones on chrome (top bar, sheet backgrounds, keypad).",
+      "**Don't** use lime and mint interchangeably; lime is yours / won, mint is called.",
+      "**Don't** use the spring overshoot on large moves or anything the owner is waiting to read.",
+      "**Don't** set UI copy in uppercase; uppercase belongs on strips and the reveal panel."
+    ]
+  }
+}
