@@ -109,6 +109,21 @@ describe('readTicketNumber with real OCR', { timeout: 60_000 }, () => {
     expect(await readTicketNumber(loadPhoto('ticket-363-desk.jpg'), recognize, { area: label, onlyArea: true })).toBeNull();
   });
 
+  // A batch of tickets from the same raffle, shot on a desk at different angles and in
+  // different light. Numbers are written on (and through) a ruled line.
+  it.each([
+    ['desk-361.jpg', '361'],
+    ['desk-362b.jpg', '362'],
+    ['desk-363b.jpg', '363'],
+    ['desk-364.jpg', '364'],
+    ['desk-365.jpg', '365'],
+    ['desk-366.jpg', '366'],
+    ['desk-367.jpg', '367'],
+    ['desk-368.jpg', '368'],
+  ])('reads %s as %s', async (name, number) => {
+    expect((await readTicketNumber(loadPhoto(name), recognize))?.number).toBe(number);
+  });
+
   it('reads a printed number', async () => {
     expect((await readTicketNumber(loadPhoto('printed-0457.jpg'), recognize))?.number).toBe('0457');
   });

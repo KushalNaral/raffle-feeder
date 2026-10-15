@@ -342,7 +342,10 @@ function groupWords(glyphs: Component[]): Word[] {
       const wh = r.y1 - r.y0 + 1;
       const overlap = Math.min(r.y1, c.y1) - Math.max(r.y0, c.y0) + 1;
       const gap = c.x0 - r.x1;
-      if (overlap >= 0.45 * Math.min(wh, ch) && gap <= 0.6 * Math.max(wh, ch) && gap > -Math.max(wh, ch)) {
+      // Similar heights only: a tall shape overlaps everything beside it and would swallow
+      // whole lines of writing into one "word".
+      const similar = Math.min(wh, ch) >= 0.5 * Math.max(wh, ch);
+      if (similar && overlap >= 0.45 * Math.min(wh, ch) && gap <= 0.6 * Math.max(wh, ch) && gap > -Math.max(wh, ch)) {
         home = wd;
         break;
       }
@@ -370,7 +373,9 @@ const grayAt = (photo: Pixels, x: number, y: number): number => {
 
 /**
  * Cut a word out of the full-resolution photo, upscale it smoothly so the text is
- * `target` px tall, then binarize and drop any ruled line running under it.
+ * `target` px tall, whiten the paper and drop any ruled line running under it. The ink
+ * keeps its shades of grey: black and white loses the feet of digits written onto a
+ * line, and OCR reads the soft edges better.
  */
 export interface CropOptions {
   /** Height the text is scaled to, in px. */
@@ -379,7 +384,11 @@ export interface CropOptions {
   margin?: number;
 }
 
-export function cropForDigits(photo: Pixels, box: Box, { target = 64, margin = 0.15 }: CropOptions = {}): GrayImage {
+export function cropForDigits(
+  photo: Pixels,
+  box: Box,
+  { target = 64, margin = 0.15 }: CropOptions = {},
+): GrayImage {
   const bx = box.x * photo.width;
   const by = box.y * photo.height;
   const bw = box.w * photo.width;
@@ -411,14 +420,32 @@ export function cropForDigits(photo: Pixels, box: Box, { target = 64, margin = 0
   const t = otsu(gray);
   const ink = new Uint8Array(cw * ch);
   for (let i = 0; i < ink.length; i++) ink[i] = (gray[i] ?? 255) < t ? 1 : 0;
-  // A run of ink much wider than a digit is the writing line, not the number.
+  // A run of ink much wider than a digit is the writing line, not the number. Only its
+  // thin stretches go: where a digit stands on the line, the stroke through it is thicker,
+  // and cutting there would take the digit's foot (a 3 cut flat reads as a 2; a 7 still
+  // joined to the line reads as a 2 too).
   const maxRun = Math.round(target * 1.2);
+  const thin = Math.max(2, Math.round(target * 0.15));
+  const strokeAt = (x: number, y: number) => {
+    let top = y;
+    let bot = y;
+    while (top > 0 && ink[(top - 1) * cw + x]) top--;
+    while (bot < ch - 1 && ink[(bot + 1) * cw + x]) bot++;
+    return bot - top + 1;
+  };
+  const line = new Uint8Array(cw * ch);
+  // Runs are measured a few rows deep, so a slightly slanted line still counts as one.
+  const reach = 3;
+  const inkNear = (x: number, y: number) => {
+    for (let dy = -reach; dy <= reach; dy++) if (y + dy >= 0 && y + dy < ch && ink[(y + dy) * cw + x]) return true;
+    return false;
+  };
   for (let y = 0; y < ch; y++) {
     let run = 0;
     for (let x = 0; x <= cw; x++) {
-      if (x < cw && ink[y * cw + x]) run++;
+      if (x < cw && inkNear(x, y)) run++;
       else {
-        if (run > maxRun) ink.fill(0, y * cw + x - run, y * cw + x);
+        if (run > maxRun) for (let k = x - run; k < x; k++) if (ink[y * cw + k] && strokeAt(k, y) <= thin) line[y * cw + k] = 1;
         run = 0;
       }
     }
@@ -428,7 +455,11 @@ export function cropForDigits(photo: Pixels, box: Box, { target = 64, margin = 0
   const oh = ch + pad * 2;
   const data = new Uint8ClampedArray(ow * oh).fill(255);
   for (let y = 0; y < ch; y++)
-    for (let x = 0; x < cw; x++) if (ink[y * cw + x]) data[(y + pad) * ow + x + pad] = 0;
+    for (let x = 0; x < cw; x++) {
+      const i = y * cw + x;
+      if (!ink[i] || line[i]) continue;
+      data[(y + pad) * ow + x + pad] = ((gray[i] ?? 0) / Math.max(1, t)) * 200;
+    }
   return { width: ow, height: oh, data };
 }
 
@@ -478,7 +509,7 @@ export function findCandidates(photo: Pixels, limit = 8, within?: (box: Box) => 
   // On a found ticket the number is a sizeable fraction of its height; on the whole
   // photo (no ticket found) it can be much smaller.
   const foundTicket = pw < im.w || ph < im.h;
-  const minH = Math.max(5, ph * (foundTicket ? 0.035 : 0.012));
+  const minH = Math.max(5, ph * (foundTicket ? 0.025 : 0.012));
   const maxH = ph * 0.3;
 
   const isGlyph = (c: Component): boolean => {

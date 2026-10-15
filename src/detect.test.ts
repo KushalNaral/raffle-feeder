@@ -65,6 +65,15 @@ describe('findCandidates', () => {
     expect(top!.box.y * 400).toBeCloseTo(240, -1);
   });
 
+  it('keeps digits apart from a tall shape beside them', () => {
+    // A tall printed shape just left of the number, overlapping its whole height.
+    const tall = { x: 280, y: 210, w: 12, h: 70, c: [60, 60, 70] as RGB };
+    const [top] = findCandidates(scene([tall, ...DIGITS]));
+    expect(top).toBeDefined();
+    expect(top!.box.x * 600).toBeCloseTo(300, -1);
+    expect(top!.box.h * 400).toBeLessThan(40);
+  });
+
   it('only keeps candidates in a given area when asked', () => {
     const left = DIGITS.map((d) => ({ ...d, x: d.x - 160 }));
     const all = findCandidates(scene([...left, ...DIGITS]));
@@ -116,16 +125,18 @@ describe('findTicket', () => {
 });
 
 describe('cropForDigits', () => {
-  it('gives black digits on white, scaled up, with the line underneath removed', () => {
+  it('gives dark digits on white, scaled up, with the line underneath removed', () => {
     const photo = scene([...DIGITS, LINE]);
     const crop = cropForDigits(photo, { x: 300 / 600, y: 230 / 400, w: 66 / 600, h: 32 / 400 }, { target: 64 });
     expect(crop.height).toBeGreaterThan(64);
-    const black = crop.data.filter((v) => v === 0).length;
-    expect(black).toBeGreaterThan(0);
+    const inked = (v: number | undefined) => (v ?? 255) < 220;
+    expect(crop.data.filter(inked).length).toBeGreaterThan(0);
+    // Paper is pure white.
+    expect(crop.data.filter((v) => v === 255).length).toBeGreaterThan(crop.data.length / 2);
     // No row is inked across most of the crop: the ruled line is gone.
     for (let y = 0; y < crop.height; y++) {
       let n = 0;
-      for (let x = 0; x < crop.width; x++) n += crop.data[y * crop.width + x] === 0 ? 1 : 0;
+      for (let x = 0; x < crop.width; x++) n += inked(crop.data[y * crop.width + x]) ? 1 : 0;
       expect(n).toBeLessThan(crop.width * 0.6);
     }
   });
