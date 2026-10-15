@@ -38,7 +38,7 @@ A private, offline, single-purpose companion for the physical ritual of a paper 
 ## Evidence on Hand
 
 - One sample ticket photo provided by the user (Yenya Soft "बडा दशैं कहाँ छ" style event ticket, number 361, Oct 16, Sanepa, Lalitpur). No other real data; any demo content must be labeled as sample.
-- A second photo from the same event (ticket 362, on dark fabric) is kept as a test fixture (`src/test/photos/ticket-362.jpg`) for the automatic number finder.
+- Photos from the same event are kept as test fixtures for the automatic number finder: ticket 362 on dark fabric (`src/test/photos/ticket-362.jpg`) and ticket 363, small on a light desk under a keyboard (`src/test/photos/ticket-363-desk.jpg`).
 
 ## Product Principles
 

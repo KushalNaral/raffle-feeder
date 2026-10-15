@@ -42,8 +42,8 @@ describe('readTicketNumber voting', () => {
   it('screens out a candidate whose first read has no digits', async () => {
     const recognize = setup({ 0: [r('', 0)], 1: [r('', 0)] });
     expect(await readTicketNumber(photo, recognize)).toBeNull();
-    // One quick read per candidate, for each attempt: as shot and nudged ±2°, in 3 orientations.
-    expect(recognize.mock.calls.length).toBe(2 * 3 * 3);
+    // One quick read per candidate, for each attempt: as shot and nudged ±2°, in 4 orientations.
+    expect(recognize.mock.calls.length).toBe(2 * 3 * 4);
   });
 
   it('prefers a multi-digit number over a confidently read speck', async () => {
