@@ -6,7 +6,12 @@ import { loadPhoto } from './test/photo';
 type RGB = [number, number, number];
 
 /** A dark photo with a cream ticket, and blocks drawn in given colours. */
-function scene(blocks: { x: number; y: number; w: number; h: number; c: RGB }[], width = 600, height = 400): Pixels {
+function scene(
+  blocks: { x: number; y: number; w: number; h: number; c: RGB }[],
+  width = 600,
+  height = 400,
+  surface: RGB = [20, 20, 28],
+): Pixels {
   const data = new Uint8ClampedArray(width * height * 4);
   const paint = (x0: number, y0: number, w: number, h: number, [r, g, b]: RGB) => {
     for (let y = y0; y < y0 + h; y++)
@@ -18,7 +23,7 @@ function scene(blocks: { x: number; y: number; w: number; h: number; c: RGB }[],
         data[i + 3] = 255;
       }
   };
-  paint(0, 0, width, height, [20, 20, 28]);
+  paint(0, 0, width, height, surface);
   paint(100, 80, 400, 240, [245, 238, 222]);
   for (const b of blocks) paint(b.x, b.y, b.w, b.h, b.c);
   return { width, height, data };
@@ -38,6 +43,26 @@ describe('findCandidates', () => {
     expect((box.x + box.w) * 600).toBeCloseTo(366, -1);
     expect(box.y * 400).toBeCloseTo(230, -1);
     expect(box.h * 400).toBeLessThan(40);
+  });
+
+  it('finds digits written onto a slanted line', () => {
+    // The line drops 1px every 15px, so no straight row of it is long, and it touches every digit.
+    const slant = Array.from({ length: 14 }, (_, i) => ({ x: 220 + i * 15, y: 266 - i, w: 15, h: 2, c: [50, 50, 60] as RGB }));
+    const digits = DIGITS.map((d) => ({ ...d, h: 36 - Math.floor((d.x - 220) / 15) }));
+    const [top] = findCandidates(scene([...digits, ...slant]));
+    expect(top).toBeDefined();
+    expect(top!.box.x * 600).toBeCloseTo(300, -1);
+    expect((top!.box.x + top!.box.w) * 600).toBeCloseTo(366, -1);
+  });
+
+  it('finds a ticket lying on a light desk, and small writing on it', () => {
+    const small = [0, 1, 2].map((i) => ({ x: 300 + i * 10, y: 240, w: 6, h: 11, c: [40, 50, 140] as RGB }));
+    // A dark keyboard along the top edge, as in a real desk photo.
+    const keyboard = { x: 0, y: 0, w: 600, h: 60, c: [25, 25, 30] as RGB };
+    const [top] = findCandidates(scene([keyboard, ...small], 600, 400, [190, 188, 182]));
+    expect(top).toBeDefined();
+    expect(top!.box.x * 600).toBeCloseTo(300, -1);
+    expect(top!.box.y * 400).toBeCloseTo(240, -1);
   });
 
   it('ignores warm orange print', () => {

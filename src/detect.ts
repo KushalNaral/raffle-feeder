@@ -188,6 +188,30 @@ function paperBlob(im: Work): { rect: Rect; blob: Component } | null {
   let best: Component | undefined;
   for (const c of blobs) if (!best || c.n > best.n) best = c;
   if (!best || best.n < im.w * im.h * 0.04) return null;
+  if (spansPhoto(best, im)) return ticketOnSurface(im, best);
+  return { rect: { x0: best.x0, y0: best.y0, x1: best.x1 + 1, y1: best.y1 + 1 }, blob: best };
+}
+
+/** Running edge to edge, a bright region is the desk or table the ticket lies on. */
+const spansPhoto = (c: Component, im: Work): boolean =>
+  (c.x0 <= 1 && c.x1 >= im.w - 2) || (c.y0 <= 1 && c.y1 >= im.h - 2);
+
+/**
+ * A ticket lying on a light surface: the paper is the brighter part of it. Split the
+ * surface's own brightness range and keep the biggest bright blob clear of the edges.
+ */
+function ticketOnSurface(im: Work, surface: Component): { rect: Rect; blob: Component } | null {
+  const whole = { x0: 0, y0: 0, x1: im.w, y1: im.h };
+  const px = surface.px ?? [];
+  const values = new Uint8Array(px.length);
+  px.forEach((i, k) => (values[k] = im.gray[i] ?? 0));
+  const t = otsu(values);
+  const mask = new Uint8Array(im.w * im.h);
+  for (const i of px) mask[i] = (im.gray[i] ?? 0) > t ? 1 : 0;
+  let best: Component | undefined;
+  for (const c of components(mask, im.w, whole, true))
+    if (!spansPhoto(c, im) && (!best || c.n > best.n)) best = c;
+  if (!best || best.n < im.w * im.h * 0.01) return null;
   return { rect: { x0: best.x0, y0: best.y0, x1: best.x1 + 1, y1: best.y1 + 1 }, blob: best };
 }
 
@@ -367,6 +391,30 @@ export function cropForDigits(photo: Pixels, box: Box, { target = 64, margin = 0
   return { width: ow, height: oh, data };
 }
 
+/**
+ * Split a shape into what stands above a thin line through it: columns holding no more
+ * than `thin` pixels are only line, so they're dropped and the rest regrouped.
+ */
+function cutLine(c: Component, w: number, thin: number): Component[] {
+  const cw = c.x1 - c.x0 + 1;
+  const ch = c.y1 - c.y0 + 1;
+  const counts = new Uint32Array(cw);
+  for (const i of c.px ?? []) counts[(i % w) - c.x0] = (counts[(i % w) - c.x0] ?? 0) + 1;
+  const local = new Uint8Array(cw * ch);
+  for (const i of c.px ?? []) {
+    const x = (i % w) - c.x0;
+    if ((counts[x] ?? 0) > thin) local[(Math.floor(i / w) - c.y0) * cw + x] = 1;
+  }
+  return components(local, cw, { x0: 0, y0: 0, x1: cw, y1: ch }, true).map((p) => ({
+    x0: p.x0 + c.x0,
+    y0: p.y0 + c.y0,
+    x1: p.x1 + c.x0,
+    y1: p.y1 + c.y0,
+    n: p.n,
+    px: (p.px ?? []).map((j) => (Math.floor(j / cw) + c.y0) * w + (j % cw) + c.x0),
+  }));
+}
+
 /** Candidate number locations in a photo, most promising first. */
 export function findCandidates(photo: Pixels, limit = 8): Candidate[] {
   const im = shrink(photo, WORK_SIZE);
@@ -380,11 +428,18 @@ export function findCandidates(photo: Pixels, limit = 8): Candidate[] {
   const minH = Math.max(5, ph * (foundTicket ? 0.035 : 0.012));
   const maxH = ph * 0.3;
 
-  const glyphs = components(ink, im.w, paper, true).filter((c) => {
+  const isGlyph = (c: Component): boolean => {
     const ch = c.y1 - c.y0 + 1;
     const cw = c.x1 - c.x0 + 1;
     // Flat slivers are leftovers of ruled lines; they'd glue the label to the number.
     return c.n >= 6 && ch >= minH && ch <= maxH && cw <= pw * 0.25 && cw / ch <= 4;
+  };
+  const thin = Math.max(2, Math.round(ph * 0.012));
+  const glyphs = components(ink, im.w, paper, true).flatMap((c) => {
+    // No digit is twice as wide as it is tall: a shape that is has run into a line,
+    // usually a slanted one the run eraser missed. Cut the line away.
+    const wide = c.x1 - c.x0 + 1 > 2 * (c.y1 - c.y0 + 1);
+    return (wide ? cutLine(c, im.w, thin) : [c]).filter(isGlyph);
   });
 
   const words = groupWords(glyphs).filter((wd) => {
@@ -498,21 +553,26 @@ export function rotatePixelsBy(photo: Pixels, deg: number): Pixels {
   const data = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
-      // Sample where this output pixel came from.
+      // Sample where this output pixel came from, blending the four nearest pixels.
       const dx = x - cx;
       const dy = y - cy;
-      const sx = Math.round(cx + dx * cos + dy * sin);
-      const sy = Math.round(cy - dx * sin + dy * cos);
+      const fx = cx + dx * cos + dy * sin;
+      const fy = cy - dx * sin + dy * cos;
       const d = (y * w + x) * 4;
-      if (sx < 0 || sy < 0 || sx >= w || sy >= h) {
-        data[d + 3] = 255;
-        continue;
-      }
-      const s = (sy * w + sx) * 4;
-      data[d] = photo.data[s] ?? 0;
-      data[d + 1] = photo.data[s + 1] ?? 0;
-      data[d + 2] = photo.data[s + 2] ?? 0;
       data[d + 3] = 255;
+      if (fx < 0 || fy < 0 || fx > w - 1 || fy > h - 1) continue;
+      const x0 = Math.floor(fx);
+      const y0 = Math.floor(fy);
+      const x1 = Math.min(w - 1, x0 + 1);
+      const y1 = Math.min(h - 1, y0 + 1);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      for (let k = 0; k < 3; k++) {
+        const at = (px: number, py: number) => photo.data[(py * w + px) * 4 + k] ?? 0;
+        const top = at(x0, y0) * (1 - tx) + at(x1, y0) * tx;
+        const bot = at(x0, y1) * (1 - tx) + at(x1, y1) * tx;
+        data[d + k] = top * (1 - ty) + bot * ty;
+      }
     }
   return { width: w, height: h, data };
 }

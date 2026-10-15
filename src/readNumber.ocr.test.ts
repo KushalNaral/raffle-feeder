@@ -72,6 +72,26 @@ describe('readTicketNumber with real OCR', { timeout: 60_000 }, () => {
     expect((await readTicketNumber(warm(ticket), recognize))?.number).toBe('362');
   });
 
+  it('reads it from a photo taken upside down', async () => {
+    const read = await readTicketNumber(rotatePixels(ticket, 180), recognize);
+    expect(read?.number).toBe('362');
+    expect(read?.rotation).toBe(180);
+  });
+
+  it('reads a small ticket lying on a light desk, written on a slanted line', async () => {
+    const read = await readTicketNumber(loadPhoto('ticket-363-desk.jpg'), recognize);
+    expect(read?.number).toBe('363');
+    expect(read?.rotation).toBe(0);
+    // Right of the printed label, in the lower part of the ticket.
+    expect(read?.box.x).toBeGreaterThan(0.5);
+    expect(read?.box.y).toBeGreaterThan(0.55);
+    expect(read?.box.y).toBeLessThan(0.62);
+  });
+
+  it('reads it on the desk photo tilted the other way', async () => {
+    expect((await readTicketNumber(rotatePixelsBy(loadPhoto('ticket-363-desk.jpg'), 5), recognize))?.number).toBe('363');
+  });
+
   it('reads a printed number', async () => {
     expect((await readTicketNumber(loadPhoto('printed-0457.jpg'), recognize))?.number).toBe('0457');
   });

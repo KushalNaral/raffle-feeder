@@ -122,10 +122,10 @@ async function readQuarter(photo: Pixels, recognize: Recognize, rotation: Rotati
   return best;
 }
 
-/** Find and read the ticket number: as shot, straightened, then turned either way. */
+/** Find and read the ticket number: as shot, straightened, then turned either way or over. */
 export async function readTicketNumber(photo: Pixels, recognize: Recognize): Promise<NumberRead | null> {
   let best = await readQuarter(photo, recognize, 0);
-  for (const rotation of [90, 270] as const) {
+  for (const rotation of [90, 270, 180] as const) {
     if (best && best.weight >= SURE_WEIGHT) break;
     const read = await readQuarter(rotatePixels(photo, rotation), recognize, rotation);
     if (read && (!best || read.weight > best.weight)) best = read;
