@@ -1,11 +1,6 @@
 import { createWorker, PSM, type Worker } from 'tesseract.js';
-import { cropForOcr } from './image';
-import type { Box } from './types';
-
-export interface OcrResult {
-  number: string;
-  confidence: number;
-}
+import type { GrayImage, Pixels } from './detect';
+import { readTicketNumber, type Mode, type NumberRead, type Recognize } from './readNumber';
 
 const base = import.meta.env.BASE_URL;
 let workerPromise: Promise<Worker> | null = null;
@@ -18,10 +13,15 @@ function getWorker(): Promise<Worker> {
       corePath: `${base}tesseract`,
       langPath: `${base}tesseract/lang`,
       gzip: true,
-    }).catch((err) => {
-      workerPromise = null;
-      throw err;
-    });
+    })
+      .then(async (w) => {
+        await w.setParameters({ tessedit_char_whitelist: '0123456789' });
+        return w;
+      })
+      .catch((err) => {
+        workerPromise = null;
+        throw err;
+      });
   }
   return workerPromise;
 }
@@ -33,61 +33,37 @@ function enqueue<T>(job: () => Promise<T>): Promise<T> {
   return run;
 }
 
-const digitsOnly = (s: string | undefined) => (s || '').replace(/[^0-9]/g, '');
-
-/** Read the number inside a user-marked box. Returns { number, confidence } or null. */
-export function readBox(canvas: HTMLCanvasElement, box: Box): Promise<OcrResult | null> {
-  return enqueue(async () => {
-    const worker = await getWorker();
-    const attempts: OcrResult[] = [];
-    // Try the box as drawn plus a slightly tighter and looser crop.
-    for (const pad of [0, 0.08, -0.08]) {
-      const b = {
-        x: box.x - box.w * pad,
-        y: box.y - box.h * pad,
-        w: box.w * (1 + 2 * pad),
-        h: box.h * (1 + 2 * pad),
-      };
-      const crop = cropForOcr(canvas, b);
-      for (const psm of [PSM.SINGLE_WORD, PSM.SINGLE_LINE]) {
-        await worker.setParameters({ tessedit_pageseg_mode: psm, tessedit_char_whitelist: '0123456789' });
-        const { data } = await worker.recognize(crop);
-        const n = digitsOnly(data.text);
-        if (n) attempts.push({ number: n, confidence: data.confidence });
-      }
-      if (attempts.length >= 2 && attempts[0]?.number === attempts[1]?.number) break;
-    }
-    if (!attempts.length) return null;
-    // Majority vote, then confidence.
-    const tally = new Map<string, OcrResult & { votes: number }>();
-    for (const a of attempts) {
-      const t = tally.get(a.number) || { number: a.number, votes: 0, confidence: 0 };
-      t.votes += 1;
-      t.confidence = Math.max(t.confidence, a.confidence);
-      tally.set(a.number, t);
-    }
-    const [best] = [...tally.values()].sort((a, b) => b.votes - a.votes || b.confidence - a.confidence);
-    return best ? { number: best.number, confidence: best.confidence } : null;
-  });
+/** A grayscale image as a binary PGM file, which Tesseract reads directly. */
+export function toPgm(img: GrayImage): Uint8Array {
+  const head = new TextEncoder().encode(`P5\n${img.width} ${img.height}\n255\n`);
+  const out = new Uint8Array(head.length + img.data.length);
+  out.set(head);
+  out.set(img.data, head.length);
+  return out;
 }
 
-/** Best-effort guess from the whole photo (printed numbers read well, handwriting often won't). */
-export function guessWhole(canvas: HTMLCanvasElement): Promise<OcrResult | null> {
-  return enqueue(async () => {
-    const worker = await getWorker();
-    await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT, tessedit_char_whitelist: '' });
-    const { data } = await worker.recognize(canvas, {}, { blocks: true });
-    let best: (OcrResult & { score: number }) | null = null;
-    for (const b of data.blocks || [])
-      for (const p of b.paragraphs)
-        for (const l of p.lines)
-          for (const w of l.words) {
-            if (!/^\d{1,6}$/.test(w.text) || w.confidence < 70) continue;
-            const score = w.confidence * (w.bbox.y1 - w.bbox.y0);
-            if (!best || score > best.score) best = { number: w.text, confidence: w.confidence, score };
-          }
-    return best;
-  });
+const PSM_FOR: Record<Mode, PSM> = { line: PSM.SINGLE_LINE, word: PSM.SINGLE_WORD };
+
+type ImageInput = Parameters<Worker['recognize']>[0];
+
+/**
+ * Recognize digits on one crop with a given Tesseract worker. Browsers take the image
+ * as a Blob; Node (tests) needs a Buffer, so the wrapping is swappable.
+ */
+export const recognizerFor =
+  (worker: Worker, wrap: (bytes: Uint8Array) => ImageInput = (b) => new Blob([b])): Recognize =>
+  async (crop, mode) => {
+    await worker.setParameters({ tessedit_pageseg_mode: PSM_FOR[mode] });
+    const { data } = await worker.recognize(wrap(toPgm(crop)));
+    return { text: data.text, confidence: data.confidence };
+  };
+
+/** Find and read the ticket number on a photo, without any help from the user. */
+export function readNumber(canvas: HTMLCanvasElement): Promise<NumberRead | null> {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return Promise.resolve(null);
+  const photo: Pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return enqueue(async () => readTicketNumber(photo, recognizerFor(await getWorker())));
 }
 
 export function warmUp(): void {
