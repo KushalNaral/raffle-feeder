@@ -29,6 +29,8 @@ export interface Candidate {
   box: Box;
   /** Higher is more number-like; used to decide which candidates to OCR first. */
   score: number;
+  /** Blue minus red of the ink, against the paper's: negative for red or orange print. */
+  tint: number;
 }
 
 const WORK_SIZE = 1000;
@@ -172,7 +174,12 @@ function findPaper(im: Work): Rect {
   return paperBlob(im)?.rect ?? { x0: 0, y0: 0, x1: im.w, y1: im.h };
 }
 
-function paperBlob(im: Work): { rect: Rect; blob: Component } | null {
+/**
+ * `tight` cleans thin bright streaks (wood grain) off a ticket lying on a surface, for its
+ * true outline. Without it the outline can run on into the surface, which suits ink
+ * finding: the ticket's size sets how ink is told apart from paper, tuned on that.
+ */
+function paperBlob(im: Work, tight = false): { rect: Rect; blob: Component } | null {
   const whole = { x0: 0, y0: 0, x1: im.w, y1: im.h };
   const t = otsu(im.gray);
   const mask = new Uint8Array(im.w * im.h);
@@ -188,7 +195,7 @@ function paperBlob(im: Work): { rect: Rect; blob: Component } | null {
   let best: Component | undefined;
   for (const c of blobs) if (!best || c.n > best.n) best = c;
   if (!best || best.n < im.w * im.h * 0.04) return null;
-  if (spansPhoto(best, im)) return ticketOnSurface(im, best);
+  if (spansPhoto(best, im)) return ticketOnSurface(im, best, tight);
   return { rect: { x0: best.x0, y0: best.y0, x1: best.x1 + 1, y1: best.y1 + 1 }, blob: best };
 }
 
@@ -200,19 +207,53 @@ const spansPhoto = (c: Component, im: Work): boolean =>
  * A ticket lying on a light surface: the paper is the brighter part of it. Split the
  * surface's own brightness range and keep the biggest bright blob clear of the edges.
  */
-function ticketOnSurface(im: Work, surface: Component): { rect: Rect; blob: Component } | null {
+function ticketOnSurface(im: Work, surface: Component, tight: boolean): { rect: Rect; blob: Component } | null {
   const whole = { x0: 0, y0: 0, x1: im.w, y1: im.h };
   const px = surface.px ?? [];
   const values = new Uint8Array(px.length);
   px.forEach((i, k) => (values[k] = im.gray[i] ?? 0));
   const t = otsu(values);
-  const mask = new Uint8Array(im.w * im.h);
+  let mask = new Uint8Array(im.w * im.h);
   for (const i of px) mask[i] = (im.gray[i] ?? 0) > t ? 1 : 0;
+  if (tight) {
+    // Bright streaks of wood grain touch the ticket's edge; thin ones don't survive this.
+    const r = Math.max(2, Math.round(Math.min(im.w, im.h) * 0.006));
+    mask = grow(grow(mask, im.w, im.h, r, true), im.w, im.h, r, false);
+  }
   let best: Component | undefined;
   for (const c of components(mask, im.w, whole, true))
     if (!spansPhoto(c, im) && (!best || c.n > best.n)) best = c;
   if (!best || best.n < im.w * im.h * 0.01) return null;
   return { rect: { x0: best.x0, y0: best.y0, x1: best.x1 + 1, y1: best.y1 + 1 }, blob: best };
+}
+
+/**
+ * Square-window morphology on a 0/1 mask: `shrink` keeps a pixel only if its whole
+ * (2r+1)² window is set (erosion); otherwise any set pixel in the window sets it (dilation).
+ */
+function grow(mask: Uint8Array, w: number, h: number, r: number, shrink: boolean): Uint8Array {
+  const iw = w + 1;
+  const sum = new Uint32Array(iw * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      row += mask[y * w + x] ?? 0;
+      sum[(y + 1) * iw + x + 1] = (sum[y * iw + x + 1] ?? 0) + row;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const ya = Math.max(0, y - r);
+    const yb = Math.min(h, y + r + 1);
+    for (let x = 0; x < w; x++) {
+      const xa = Math.max(0, x - r);
+      const xb = Math.min(w, x + r + 1);
+      const n =
+        (sum[yb * iw + xb] ?? 0) - (sum[ya * iw + xb] ?? 0) - (sum[yb * iw + xa] ?? 0) + (sum[ya * iw + xa] ?? 0);
+      out[y * w + x] = shrink ? (n === (yb - ya) * (xb - xa) ? 1 : 0) : n > 0 ? 1 : 0;
+    }
+  }
+  return out;
 }
 
 /** Ink mask inside the ticket, with straight rules removed unless asked to keep them. */
@@ -415,8 +456,20 @@ function cutLine(c: Component, w: number, thin: number): Component[] {
   }));
 }
 
-/** Candidate number locations in a photo, most promising first. */
-export function findCandidates(photo: Pixels, limit = 8): Candidate[] {
+/** Where the ticket is in a photo, normalized; null when no ticket stands out. */
+export function findTicket(photo: Pixels): Box | null {
+  const im = shrink(photo, WORK_SIZE);
+  const found = paperBlob(im, true);
+  if (!found) return null;
+  const { x0, y0, x1, y1 } = found.rect;
+  return { x: x0 / im.w, y: y0 / im.h, w: (x1 - x0) / im.w, h: (y1 - y0) / im.h };
+}
+
+/**
+ * Candidate number locations in a photo, most promising first. `within` keeps only
+ * candidates it accepts, before the limit is applied.
+ */
+export function findCandidates(photo: Pixels, limit = 8, within?: (box: Box) => boolean): Candidate[] {
   const im = shrink(photo, WORK_SIZE);
   const paper = findPaper(im);
   const ink = findInk(im, paper);
@@ -448,6 +501,18 @@ export function findCandidates(photo: Pixels, limit = 8): Candidate[] {
     return wh >= minH && ww / wh >= 0.3 && ww / wh <= 9 && wd.parts.length <= 10;
   });
 
+  // The paper's own cast (warm lamp light, cream stock), so ink colour is judged against it.
+  let paperTint = 0;
+  let paperN = 0;
+  for (let y = paper.y0; y < paper.y1; y += 3)
+    for (let x = paper.x0; x < paper.x1; x += 3) {
+      const i = y * im.w + x;
+      if (ink[i]) continue;
+      paperTint += (im.b[i] ?? 0) - (im.r[i] ?? 0);
+      paperN++;
+    }
+  paperTint /= paperN || 1;
+
   const scored = words.map((wd) => {
     const r = wd.rect;
     const wh = r.y1 - r.y0 + 1;
@@ -471,10 +536,13 @@ export function findCandidates(photo: Pixels, limit = 8): Candidate[] {
       (density > 0.08 && density < 0.6 ? 0.5 : 0) +
       (wd.parts.length >= 2 && wd.parts.length <= 6 ? 0.5 : 0);
     const box = { x: r.x0 / im.w, y: r.y0 / im.h, w: (r.x1 - r.x0 + 1) / im.w, h: (r.y1 - r.y0 + 1) / im.h };
-    return { box, score };
+    return { box, score, tint: blue / inkCount - paperTint };
   });
 
-  return scored.sort((a, b) => b.score - a.score).slice(0, limit);
+  return scored
+    .filter((c) => !within || within(c.box))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
 
 

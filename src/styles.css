@@ -1072,12 +1072,39 @@ button.tcard:active {
     opacity: 0.55;
   }
 }
+.spot-ready {
+  cursor: crosshair;
+  /* Dragging marks the number's spot instead of scrolling. */
+  touch-action: none;
+}
 .spot-box {
   position: absolute;
   border: 2px solid var(--lime);
   border-radius: 8px;
   box-shadow: 0 0 0 9999px oklch(0.12 0.05 295 / 0.5);
   pointer-events: none;
+}
+
+.spot-box-marked {
+  border-style: dashed;
+}
+.review-hint {
+  margin: 0 0 14px;
+  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lime);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .review-fields {
@@ -1116,7 +1143,7 @@ button.tcard:active {
   font-weight: 500;
 }
 .status-read .review-status,
-.status-guessed .review-status {
+.status-spot .review-status {
   color: var(--lime);
 }
 .review-warn {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { cropForDigits, estimateSkew, findCandidates, rotatePixels, rotatePixelsBy, type Pixels } from './detect';
+import { cropForDigits, estimateSkew, findCandidates, findTicket, rotatePixels, rotatePixelsBy, type Pixels } from './detect';
 import { loadPhoto } from './test/photo';
 
 type RGB = [number, number, number];
@@ -65,6 +65,23 @@ describe('findCandidates', () => {
     expect(top!.box.y * 400).toBeCloseTo(240, -1);
   });
 
+  it('only keeps candidates in a given area when asked', () => {
+    const left = DIGITS.map((d) => ({ ...d, x: d.x - 160 }));
+    const all = findCandidates(scene([...left, ...DIGITS]));
+    expect(all).toHaveLength(2);
+    const inRight = findCandidates(scene([...left, ...DIGITS]), 8, (b) => b.x > 0.4);
+    expect(inRight).toHaveLength(1);
+    expect(inRight[0]!.box.x * 600).toBeCloseTo(300, -1);
+  });
+
+  it('tells pen from red print by colour', () => {
+    // Faded red, as print looks in a photo: too dull to be dropped as coloured print outright.
+    const red = DIGITS.map((d) => ({ ...d, x: d.x - 160, c: [150, 90, 95] as RGB }));
+    const byX = findCandidates(scene([...red, ...DIGITS])).sort((a, b) => a.box.x - b.box.x);
+    expect(byX[0]!.tint).toBeLessThan(-25);
+    expect(byX[1]!.tint).toBeGreaterThan(0);
+  });
+
   it('ignores warm orange print', () => {
     const orange = DIGITS.map((d) => ({ ...d, c: [235, 120, 40] as RGB }));
     expect(findCandidates(scene(orange))).toEqual([]);
@@ -72,6 +89,29 @@ describe('findCandidates', () => {
 
   it('finds nothing on a blank ticket', () => {
     expect(findCandidates(scene([]))).toEqual([]);
+  });
+});
+
+describe('findTicket', () => {
+  it('outlines the ticket on a dark background', () => {
+    const t = findTicket(scene([]))!;
+    expect(t.x * 600).toBeCloseTo(100, -1);
+    expect(t.y * 400).toBeCloseTo(80, -1);
+    expect(t.w * 600).toBeCloseTo(400, -1);
+    expect(t.h * 400).toBeCloseTo(240, -1);
+  });
+
+  it('outlines just the ticket on a grainy light desk', () => {
+    // The real photo: a ticket at about x 28–76%, y 43–64%, on bright wood grain.
+    const t = findTicket(loadPhoto('ticket-363-desk.jpg'))!;
+    expect(t.x).toBeGreaterThan(0.25);
+    expect(t.x + t.w).toBeLessThan(0.8);
+    expect(t.y).toBeGreaterThan(0.4);
+    expect(t.y + t.h).toBeLessThan(0.67);
+  });
+
+  it('finds none when nothing stands out', () => {
+    expect(findTicket(scene([], 600, 400, [245, 238, 222]))).toBeNull();
   });
 });
 

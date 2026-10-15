@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { RotateCw, Trash2, ScanLine, LoaderCircle, TriangleAlert } from 'lucide-react';
 import Sheet from './Sheet';
 import { loadImage, renderRotated, canvasToBlob } from '../image';
-import { readNumber } from '../ocr';
+import { locateTicket, readNumber } from '../ocr';
+import { fromTicket, loadSpot, saveSpot, toTicket } from '../spot';
 import { normalize, uid } from '../util';
 import type { Box, Rotation, Ticket } from '../types';
 
-type Status = 'loading' | 'reading' | 'read' | 'none' | 'manual' | 'error';
+type Status = 'loading' | 'reading' | 'read' | 'spot' | 'none' | 'manual' | 'error';
 
 interface Item {
   id: string;
@@ -17,25 +18,93 @@ interface Item {
   /** Where the number was found on the photo. */
   box: Box | null;
   src: string | null;
+  /** The spot the user dragged on this photo, while it's being read. */
+  marked?: Box | null;
 }
 
 // Room around the found number so the outline frames the digits instead of covering them.
 const padX = (b: Box) => Math.max(b.h * 0.5, 0.012);
 const padY = (b: Box) => Math.max(b.h * 0.6, 0.012);
 
-/** The photo, with the spot the number was read from outlined. */
-function Photo({ src, box, label }: { src: string | null; box: Box | null; label: string }) {
+/** A drag smaller than this is a tap. */
+const MIN_DRAG = 0.02;
+
+interface PhotoProps {
+  src: string | null;
+  /** Where the number was found: outlined with room around it. */
+  box: Box | null;
+  /** A spot the user marked: outlined exactly as drawn. */
+  marked: Box | null;
+  label: string;
+  /** A tap at a point, in photo fractions. */
+  onTap: (x: number, y: number) => void;
+  onMark: (box: Box) => void;
+}
+
+/** The photo, with the number outlined. Drag over it to mark where the number is. */
+function Photo({ src, box, marked, label, onTap, onMark }: PhotoProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const [draft, setDraft] = useState<Box | null>(null);
+
+  const point = (e: PointerEvent) => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r || !r.width || !r.height) return { x: 0, y: 0 };
+    return {
+      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+    };
+  };
+  const spanTo = (e: PointerEvent): Box | null => {
+    const s = start.current;
+    if (!s) return null;
+    const p = point(e);
+    return { x: Math.min(s.x, p.x), y: Math.min(s.y, p.y), w: Math.abs(p.x - s.x), h: Math.abs(p.y - s.y) };
+  };
+
+  const onDown = (e: PointerEvent) => {
+    if (!src) return;
+    e.preventDefault();
+    ref.current?.setPointerCapture?.(e.pointerId);
+    start.current = point(e);
+  };
+  const onMove = (e: PointerEvent) => {
+    if (start.current) setDraft(spanTo(e));
+  };
+  const onUp = (e: PointerEvent) => {
+    const span = spanTo(e);
+    start.current = null;
+    setDraft(null);
+    if (!span) return;
+    if (span.w < MIN_DRAG && span.h < MIN_DRAG) onTap(span.x, span.y);
+    else onMark(span);
+  };
+
+  const exact = draft ?? marked;
+  const outline = exact ?? (box && { x: box.x - padX(box), y: box.y - padY(box), w: box.w + 2 * padX(box), h: box.h + 2 * padY(box) });
   return (
-    <div className="spot" role="img" aria-label={label}>
+    <div
+      ref={ref}
+      className={`spot${src ? ' spot-ready' : ''}`}
+      role="img"
+      aria-label={label}
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={() => {
+        start.current = null;
+        setDraft(null);
+      }}
+    >
       {src ? <img src={src} alt="" draggable={false} /> : <div className="spot-loading" />}
-      {src && box ? (
+      {src && outline ? (
         <div
-          className="spot-box"
+          className={`spot-box${exact ? ' spot-box-marked' : ''}`}
           style={{
-            left: `${(box.x - padX(box)) * 100}%`,
-            top: `${(box.y - padY(box)) * 100}%`,
-            width: `${(box.w + 2 * padX(box)) * 100}%`,
-            height: `${(box.h + 2 * padY(box)) * 100}%`,
+            left: `${outline.x * 100}%`,
+            top: `${outline.y * 100}%`,
+            width: `${outline.w * 100}%`,
+            height: `${outline.h * 100}%`,
           }}
         />
       ) : null}
@@ -43,11 +112,19 @@ function Photo({ src, box, label }: { src: string | null; box: Box | null; label
   );
 }
 
+/** Does the middle of `box` fall inside `area`? */
+const centredIn = (box: Box, area: Box) => {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  return cx >= area.x && cx <= area.x + area.w && cy >= area.y && cy <= area.y + area.h;
+};
+
 const STATUS: Record<Status, string> = {
   loading: 'Opening photo…',
   reading: 'Reading the number…',
   read: 'Found on the photo. Check it matches.',
-  none: 'Couldn’t find the number. Type it in.',
+  spot: 'Read from your spot. Check it matches.',
+  none: 'Couldn’t find the number. Drag a box over it, or type it in.',
   manual: 'Typed by you.',
   error: 'This photo couldn’t be opened.',
 };
@@ -64,9 +141,23 @@ export default function ReviewSheet({ files, existing, onClose, onSave }: Review
     files.map((file) => ({ id: uid(), file, rotation: 0, number: '', status: 'loading', box: null, src: null })),
   );
   const [saving, setSaving] = useState(false);
-  const media = useRef(new Map<string, { img: HTMLImageElement; canvas: HTMLCanvasElement | null }>());
+  /** Where numbers are written, relative to the ticket; looked at first on every photo. */
+  const [spot, setSpot] = useState<Box | null>(loadSpot);
+  const spotRef = useRef(spot);
+  spotRef.current = spot;
+  const media = useRef(
+    new Map<string, { img: HTMLImageElement; canvas: HTMLCanvasElement | null; ticket?: Box | null }>(),
+  );
   const itemsRef = useRef(items);
   itemsRef.current = items;
+
+  /** The ticket's place on a photo as currently turned, found once per render. */
+  const ticketOf = (id: string): Box | null => {
+    const m = media.current.get(id);
+    if (!m?.canvas) return null;
+    if (m.ticket === undefined) m.ticket = locateTicket(m.canvas);
+    return m.ticket;
+  };
 
   const patch = useCallback((id: string, p: Partial<Item>) => setItems((list) => list.map((it) => (it.id === id ? { ...it, ...p } : it))), []);
 
@@ -75,6 +166,7 @@ export default function ReviewSheet({ files, existing, onClose, onSave }: Review
       const m = media.current.get(id);
       if (!m) return null;
       m.canvas = renderRotated(m.img, rotation, 1600);
+      m.ticket = undefined;
       const blob = await canvasToBlob(m.canvas, 0.8);
       const src = URL.createObjectURL(blob);
       setItems((list) =>
@@ -89,29 +181,70 @@ export default function ReviewSheet({ files, existing, onClose, onSave }: Review
     [],
   );
 
-  /** Find the number by itself. Turns the photo upright if it had to read it sideways. */
+  /**
+   * Read the number: in `marked` only, when the user just marked it; otherwise in the
+   * saved spot first, then anywhere. Turns the photo upright if it had to read it sideways.
+   */
   const recognise = useCallback(
-    async (id: string) => {
+    async (id: string, marked?: Box) => {
       const m = media.current.get(id);
       const it = itemsRef.current.find((x) => x.id === id);
       if (!m?.canvas || !it) return;
-      patch(id, { status: 'reading', box: null });
+      patch(id, { status: 'reading', box: null, marked: marked ?? null });
       try {
-        const res = await readNumber(m.canvas);
+        const saved = spotRef.current;
+        const area = marked ?? (saved ? fromTicket(saved, ticketOf(id)) : undefined);
+        const res = await readNumber(m.canvas, { area, onlyArea: !!marked });
         const cur = itemsRef.current.find((x) => x.id === id);
         if (!cur || cur.status === 'manual') return;
-        if (!res) return patch(id, { status: 'none' });
+        if (!res) return patch(id, { status: 'none', marked: null });
         if (res.rotation) await render(id, ((it.rotation + res.rotation) % 360) as Rotation);
         const now = itemsRef.current.find((x) => x.id === id);
         if (!now || now.status === 'manual') return;
-        patch(id, { number: res.number, status: 'read', box: res.box });
+        const fromSpot = !!area && !res.rotation && centredIn(res.box, area);
+        patch(id, { number: res.number, status: fromSpot || marked ? 'spot' : 'read', box: res.box, marked: null });
       } catch (err) {
         console.error(err);
-        patch(id, { status: 'none' });
+        patch(id, { status: 'none', marked: null });
       }
     },
+    // ticketOf only reads refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [patch, render],
   );
+
+  /** The user marked where the number is: read it there, and remember the spot. */
+  const mark = (id: string, box: Box) => {
+    const next = toTicket(box, ticketOf(id));
+    setSpot(next);
+    spotRef.current = next;
+    saveSpot(next);
+    void (async () => {
+      await recognise(id, box);
+      // Photos that came up empty get another try in the new spot.
+      for (const it of itemsRef.current)
+        if (it.id !== id && it.status === 'none') await recognise(it.id);
+    })();
+  };
+
+  /** A tap marks a number-sized box around that point. */
+  const tap = (id: string, x: number, y: number) => {
+    const t = ticketOf(id) ?? { x: 0, y: 0, w: 1, h: 1 };
+    const w = t.w * 0.4;
+    const h = t.h * 0.16;
+    mark(id, {
+      x: Math.min(1 - w, Math.max(0, x - w / 2)),
+      y: Math.min(1 - h, Math.max(0, y - h / 2)),
+      w,
+      h,
+    });
+  };
+
+  const forgetSpot = () => {
+    setSpot(null);
+    spotRef.current = null;
+    saveSpot(null);
+  };
 
   // Decode every photo, then read each number.
   useEffect(() => {
@@ -231,6 +364,18 @@ export default function ReviewSheet({ files, existing, onClose, onSave }: Review
         </>
       }
     >
+      <p className="review-hint">
+        {spot ? (
+          <>
+            Looking in your saved spot first. Drag over a number to move it.{' '}
+            <button type="button" className="link-btn" onClick={forgetSpot}>
+              Forget spot
+            </button>
+          </>
+        ) : (
+          'Wrong number? Drag a box over it on the photo. That spot is checked first from then on.'
+        )}
+      </p>
       <ol className="review-list">
         {items.map((it, i) => {
           const k = normalize(it.number);
@@ -238,7 +383,14 @@ export default function ReviewSheet({ files, existing, onClose, onSave }: Review
           return (
             <li key={it.id} className={`review-item status-${it.status}`}>
               <div className="review-photo">
-                <Photo src={it.src} box={it.box} label={`Photo ${i + 1}`} />
+                <Photo
+                  src={it.src}
+                  box={it.box}
+                  marked={it.marked ?? null}
+                  label={`Photo ${i + 1}`}
+                  onTap={(x, y) => tap(it.id, x, y)}
+                  onMark={(b) => mark(it.id, b)}
+                />
                 <div className="review-photo-tools">
                   <button type="button" className="icon-btn on-photo" onClick={() => rotate(it.id)} aria-label="Rotate photo" data-tip="Rotate">
                     <RotateCw size={20} />

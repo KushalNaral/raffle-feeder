@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ReviewSheet from './ReviewSheet';
-import { readNumber } from '../ocr';
+import { locateTicket, readNumber } from '../ocr';
 import { renderRotated } from '../image';
 import type { NumberRead } from '../readNumber';
-import type { Ticket } from '../types';
+import type { Box, Ticket } from '../types';
 
 // jsdom can't decode images or draw on canvas, and OCR needs the real engine: stub both layers.
 vi.mock('../image', () => ({
@@ -12,7 +12,7 @@ vi.mock('../image', () => ({
   renderRotated: vi.fn(() => document.createElement('canvas')),
   canvasToBlob: vi.fn(async () => new Blob(['jpeg'], { type: 'image/jpeg' })),
 }));
-vi.mock('../ocr', () => ({ readNumber: vi.fn() }));
+vi.mock('../ocr', () => ({ readNumber: vi.fn(), locateTicket: vi.fn(() => null) }));
 
 const found = (number: string, extra: Partial<NumberRead> = {}): NumberRead => ({
   number,
@@ -38,10 +38,27 @@ const field = (i: number) => {
 };
 const addButton = () => screen.getByRole('button', { name: /^Add/ });
 
+/** The photo's markable area, laid out 200 × 100 px (jsdom does no layout). */
+const photoArea = (i: number) => {
+  const el = screen.getByRole('img', { name: `Photo ${i + 1}` });
+  el.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 100 });
+  return el;
+};
+const drag = (el: HTMLElement, [x0, y0]: [number, number], [x1, y1]: [number, number]) => {
+  fireEvent.pointerDown(el, { clientX: x0, clientY: y0, pointerId: 1 });
+  fireEvent.pointerMove(el, { clientX: x1, clientY: y1, pointerId: 1 });
+  fireEvent.pointerUp(el, { clientX: x1, clientY: y1, pointerId: 1 });
+};
+const expectBox = (got: Box | undefined | null, want: Box) => {
+  expect(got).toBeTruthy();
+  for (const k of ['x', 'y', 'w', 'h'] as const) expect(got?.[k]).toBeCloseTo(want[k]);
+};
+
 describe('ReviewSheet', () => {
   beforeEach(() => {
     vi.mocked(readNumber).mockReset();
     vi.mocked(renderRotated).mockClear();
+    vi.mocked(locateTicket).mockReset().mockReturnValue(null);
   });
 
   it('finds each number by itself and saves them', async () => {
@@ -59,12 +76,76 @@ describe('ReviewSheet', () => {
     expect(saved.every((t) => t.called === false && t.image instanceof Blob)).toBe(true);
   });
 
-  it('never asks you to mark where the number is', async () => {
+  it('offers to mark the number’s spot, without requiring it', async () => {
     vi.mocked(readNumber).mockResolvedValue(found('5'));
     setup(1);
     await waitFor(() => expect(field(0)).toHaveValue('5'));
-    expect(screen.queryByText(/drag/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/spot/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Drag a box over it on the photo/)).toBeInTheDocument();
+    expect(vi.mocked(readNumber).mock.calls[0]?.[1]).toEqual({ area: undefined, onlyArea: false });
+  });
+
+  it('reads the spot you drag over, and remembers it relative to the ticket', async () => {
+    vi.mocked(readNumber).mockResolvedValueOnce(null).mockResolvedValueOnce(found('363'));
+    // The ticket fills the right half of the photo.
+    vi.mocked(locateTicket).mockReturnValue({ x: 0.5, y: 0, w: 0.5, h: 1 });
+    setup(1);
+    await waitFor(() => expect(screen.getByText(/Couldn’t find the number/)).toBeInTheDocument());
+
+    drag(photoArea(0), [120, 30], [160, 60]);
+    await waitFor(() => expect(field(0)).toHaveValue('363'));
+    const [, opts] = vi.mocked(readNumber).mock.calls[1] ?? [];
+    expect(opts?.onlyArea).toBe(true);
+    expectBox(opts?.area, { x: 0.6, y: 0.3, w: 0.2, h: 0.3 });
+    expect(screen.getByText('Read from your spot. Check it matches.')).toBeInTheDocument();
+    // Saved as a part of the ticket, not of this photo.
+    expectBox(JSON.parse(localStorage.getItem('rf:number-spot') ?? 'null'), { x: 0.2, y: 0.3, w: 0.4, h: 0.3 });
+    expect(screen.getByText(/Looking in your saved spot first/)).toBeInTheDocument();
+  });
+
+  it('looks in the saved spot first on new photos', async () => {
+    localStorage.setItem('rf:number-spot', JSON.stringify({ x: 0.2, y: 0.3, w: 0.4, h: 0.3 }));
+    vi.mocked(locateTicket).mockReturnValue({ x: 0, y: 0.5, w: 1, h: 0.5 });
+    vi.mocked(readNumber).mockResolvedValue(found('42', { box: { x: 0.3, y: 0.7, w: 0.1, h: 0.05 } }));
+    setup(1);
+    await waitFor(() => expect(field(0)).toHaveValue('42'));
+    const [, opts] = vi.mocked(readNumber).mock.calls[0] ?? [];
+    expect(opts?.onlyArea).toBe(false);
+    expectBox(opts?.area, { x: 0.2, y: 0.65, w: 0.4, h: 0.15 });
+    expect(screen.getByText('Read from your spot. Check it matches.')).toBeInTheDocument();
+  });
+
+  it('tries the new spot on photos that came up empty', async () => {
+    vi.mocked(readNumber)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(found('1'))
+      .mockResolvedValueOnce(found('2'));
+    setup(2);
+    await waitFor(() => expect(screen.getByText('2 still need a number')).toBeInTheDocument());
+    drag(photoArea(0), [20, 20], [80, 50]);
+    await waitFor(() => expect(numberInputs().map((i) => i.value)).toEqual(['1', '2']));
+    expect(vi.mocked(readNumber).mock.calls[3]?.[1]?.onlyArea).toBe(false);
+  });
+
+  it('a tap marks a number-sized box around that point', async () => {
+    vi.mocked(readNumber).mockResolvedValueOnce(null).mockResolvedValueOnce(found('9'));
+    setup(1);
+    await waitFor(() => expect(screen.getByText(/Couldn’t find the number/)).toBeInTheDocument());
+    drag(photoArea(0), [100, 50], [100, 50]);
+    await waitFor(() => expect(field(0)).toHaveValue('9'));
+    const area = vi.mocked(readNumber).mock.calls[1]?.[1]?.area;
+    expect((area?.x ?? 0) + (area?.w ?? 0) / 2).toBeCloseTo(0.5);
+    expect((area?.y ?? 0) + (area?.h ?? 0) / 2).toBeCloseTo(0.5);
+  });
+
+  it('forgets the saved spot', async () => {
+    localStorage.setItem('rf:number-spot', JSON.stringify({ x: 0.2, y: 0.3, w: 0.4, h: 0.3 }));
+    vi.mocked(readNumber).mockResolvedValue(found('5'));
+    setup(1);
+    await waitFor(() => expect(field(0)).toHaveValue('5'));
+    fireEvent.click(screen.getByRole('button', { name: 'Forget spot' }));
+    expect(localStorage.getItem('rf:number-spot')).toBeNull();
+    expect(screen.getByText(/Drag a box over it on the photo/)).toBeInTheDocument();
   });
 
   it('outlines where the number was found', async () => {
@@ -91,7 +172,7 @@ describe('ReviewSheet', () => {
     vi.mocked(readNumber).mockResolvedValue(null);
     setup(2);
     await waitFor(() => expect(screen.getByText('2 still need a number')).toBeInTheDocument());
-    expect(screen.getAllByText('Couldn’t find the number. Type it in.')).toHaveLength(2);
+    expect(screen.getAllByText('Couldn’t find the number. Drag a box over it, or type it in.')).toHaveLength(2);
     expect(addButton()).toBeDisabled();
 
     fireEvent.change(field(0), { target: { value: '12' } });
@@ -104,7 +185,7 @@ describe('ReviewSheet', () => {
     vi.mocked(readNumber).mockRejectedValue(new Error('worker crashed'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     setup(1);
-    await waitFor(() => expect(screen.getByText('Couldn’t find the number. Type it in.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Couldn’t find the number. Drag a box over it, or type it in.')).toBeInTheDocument());
   });
 
   it('Enter jumps to the next empty number, then adds the batch', async () => {
@@ -143,7 +224,7 @@ describe('ReviewSheet', () => {
   it('reads again after you rotate the photo', async () => {
     vi.mocked(readNumber).mockResolvedValueOnce(null).mockResolvedValueOnce(found('808'));
     setup(1);
-    await waitFor(() => expect(screen.getByText('Couldn’t find the number. Type it in.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Couldn’t find the number. Drag a box over it, or type it in.')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Rotate photo' }));
     await waitFor(() => expect(field(0)).toHaveValue('808'));
     expect(vi.mocked(renderRotated).mock.calls.map((c) => c[1])).toEqual([0, 90]);
