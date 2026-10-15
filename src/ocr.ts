@@ -1,6 +1,7 @@
 import { createWorker, PSM, type Worker } from 'tesseract.js';
-import type { GrayImage, Pixels } from './detect';
-import { readTicketNumber, type Mode, type NumberRead, type Recognize } from './readNumber';
+import { findTicket, type GrayImage, type Pixels } from './detect';
+import { readTicketNumber, type Mode, type NumberRead, type ReadOptions, type Recognize } from './readNumber';
+import type { Box } from './types';
 
 const base = import.meta.env.BASE_URL;
 let workerPromise: Promise<Worker> | null = null;
@@ -58,12 +59,20 @@ export const recognizerFor =
     return { text: data.text, confidence: data.confidence };
   };
 
-/** Find and read the ticket number on a photo, without any help from the user. */
-export function readNumber(canvas: HTMLCanvasElement): Promise<NumberRead | null> {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) return Promise.resolve(null);
-  const photo: Pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  return enqueue(async () => readTicketNumber(photo, recognizerFor(await getWorker())));
+const pixelsOf = (canvas: HTMLCanvasElement): Pixels | null =>
+  canvas.getContext('2d', { willReadFrequently: true })?.getImageData(0, 0, canvas.width, canvas.height) ?? null;
+
+/** Find and read the ticket number on a photo, looking in `area` first when given. */
+export function readNumber(canvas: HTMLCanvasElement, options: ReadOptions = {}): Promise<NumberRead | null> {
+  const photo = pixelsOf(canvas);
+  if (!photo) return Promise.resolve(null);
+  return enqueue(async () => readTicketNumber(photo, recognizerFor(await getWorker()), options));
+}
+
+/** Where the ticket is on a photo, if it stands out from what it's lying on. */
+export function locateTicket(canvas: HTMLCanvasElement): Box | null {
+  const photo = pixelsOf(canvas);
+  return photo ? findTicket(photo) : null;
 }
 
 export function warmUp(): void {

@@ -4,7 +4,7 @@ import App from './App';
 import { clearTickets, exportBackup, loadTickets, saveTicket } from './db';
 import { makeTicket } from './test/fixtures';
 
-vi.mock('./ocr', () => ({ warmUp: vi.fn(), readNumber: vi.fn(async () => null) }));
+vi.mock('./ocr', () => ({ warmUp: vi.fn(), readNumber: vi.fn(async () => null), locateTicket: vi.fn(() => null) }));
 
 const tabbar = () => screen.getByRole('navigation', { name: 'Sections' });
 

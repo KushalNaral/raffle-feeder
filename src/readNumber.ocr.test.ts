@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createWorker, type Worker } from 'tesseract.js';
-import { rotatePixels, rotatePixelsBy, type Pixels } from './detect';
+import { findTicket, rotatePixels, rotatePixelsBy, type Pixels } from './detect';
 import { recognizerFor } from './ocr';
 import { readTicketNumber, type Recognize } from './readNumber';
+import { fromTicket, toTicket } from './spot';
 import { loadPhoto } from './test/photo';
 
 let worker: Worker;
@@ -90,6 +91,22 @@ describe('readTicketNumber with real OCR', { timeout: 60_000 }, () => {
 
   it('reads it on the desk photo tilted the other way', async () => {
     expect((await readTicketNumber(rotatePixelsBy(loadPhoto('ticket-363-desk.jpg'), 5), recognize))?.number).toBe('363');
+  });
+
+  it('carries a spot marked on one ticket over to another photographed differently', async () => {
+    // Marked loosely around the number on the 362 photo, where the ticket fills the frame...
+    const desk = loadPhoto('ticket-363-desk.jpg');
+    const marked = { x: 0.43, y: 0.66, w: 0.13, h: 0.054 };
+    expect((await readTicketNumber(ticket, recognize, { area: marked, onlyArea: true }))?.number).toBe('362');
+    const spot = toTicket(marked, findTicket(ticket));
+    // ...then looked for on the small ticket on the desk, and nowhere else.
+    const read = await readTicketNumber(desk, recognize, { area: fromTicket(spot, findTicket(desk)), onlyArea: true });
+    expect(read?.number).toBe('363');
+  });
+
+  it('reads nothing from a marked spot with no number in it', async () => {
+    const label = { x: 0.41, y: 0.58, w: 0.08, h: 0.025 };
+    expect(await readTicketNumber(loadPhoto('ticket-363-desk.jpg'), recognize, { area: label, onlyArea: true })).toBeNull();
   });
 
   it('reads a printed number', async () => {

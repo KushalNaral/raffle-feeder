@@ -44,4 +44,12 @@ if (typeof window !== 'undefined') {
     });
   };
   Element.prototype.scrollIntoView ??= () => {};
+  // jsdom has no PointerEvent; without it pointer events lose their coordinates.
+  globalThis.PointerEvent ??= class extends MouseEvent {
+    pointerId: number;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 1;
+    }
+  } as typeof PointerEvent;
 }
