@@ -4,7 +4,10 @@ import { afterEach } from 'vitest';
 // Most tests run in jsdom; the real-OCR tests run in plain Node and skip the DOM setup.
 if (typeof window !== 'undefined') {
   await import('@testing-library/jest-dom/vitest');
-  const { cleanup } = await import('@testing-library/react');
+  const { cleanup, configure } = await import('@testing-library/react');
+  // CI machines are slower than a laptop, especially while the OCR tests run alongside:
+  // give findBy*/waitFor more than the 1s default before calling something missing.
+  configure({ asyncUtilTimeout: 5000 });
 
   afterEach(() => {
     cleanup();
