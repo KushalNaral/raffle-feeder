@@ -7,7 +7,7 @@ Raffle Feeder keeps your paper raffle tickets in a phone wallet. Photograph your
 ## Features
 
 - **Add tickets** with the + button, which opens your phone's camera or gallery, including many photos at once (on desktop you can also drag and drop).
-- **On-device OCR** reads the ticket number. Handwritten numbers read best when you drag a box over the number on one photo. The app remembers that spot and uses it for the rest of the batch. You always confirm or correct the number.
+- **Finds the number by itself**: on-device OCR locates the ticket in the photo, finds the handwritten or printed number on it and reads it. There's nothing to mark. Sideways and slightly tilted photos are handled too, and the spot it read is outlined so you can confirm or correct the number.
 - **Wallet**: tickets appear as stacked passes, filtered by All, Called or Won.
 - **Check**: a big keypad for the draw, and where the app opens once you have tickets. It shows *It's yours!* when the number matches and marks that ticket as called, or *Not this time* when it doesn't. Just type the next number over the last one. It keeps a list of the numbers you've checked.
 - **Marking**: mark a ticket as Called, and note the prize if you won one.
